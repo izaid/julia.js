@@ -1,0 +1,1 @@
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++   -Wall -Werror -Wno-deprecated-declarations -std=c++14 -dynamiclib -Wl,-headerpad_max_install_names  -o libj2.dylib -install_name /Users/irwin/git/j2/build/libj2.dylib CMakeFiles/j2.dir/src/j2/j2.cpp.o 
