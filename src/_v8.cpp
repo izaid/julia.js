@@ -43,8 +43,9 @@ void jl_v8_destroy() {
 }
 
 jl_value_t *jl_v8_eval(const char *src) {
-  Nan::HandleScope scope;
+  Nan::EscapableHandleScope scope;
 
+/*
   Nan::MaybeLocal<Nan::BoundScript> script =
       Nan::CompileScript(v8::String::NewFromUtf8(m_isolate, src));
   if (script.IsEmpty()) {
@@ -57,6 +58,9 @@ jl_value_t *jl_v8_eval(const char *src) {
   }
 
   return j2::FromJavaScriptValue(value.ToLocalChecked());
+*/
+
+  return jl_nothing;
 
   /*
     v8::Isolate::Scope isolate_scope(m_isolate);
