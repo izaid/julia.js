@@ -26,8 +26,13 @@ ArrayDescriptorConstructor(const v8::FunctionCallbackInfo<v8::Value> &info) {
   info.This()->Set(v8::String::NewFromUtf8(isolate, "data"), info[1]);
 }
 
+#include <map>
+
 static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
                                                 jl_value_t *value) {
+  static std::map<jl_datatype_t *, const char *> types{
+      {jl_float32_type, "Float32Array"}};
+
   v8::Local<v8::ObjectTemplate> instance =
       j2::array_descriptor.Get(isolate)->InstanceTemplate();
   v8::Local<v8::Object> res = instance->NewInstance();
@@ -47,7 +52,8 @@ static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
           .ToLocalChecked();
   res->Set(
       v8::String::NewFromUtf8(isolate, "data"),
-      NewTypedArray(isolate, "Float32Array",
+      NewTypedArray(isolate,
+                    types[static_cast<jl_datatype_t *>(jl_array_eltype(value))],
                     buffer->Get(v8::String::NewFromUtf8(isolate, "buffer")), 0,
                     jl_array_len(value)));
 
@@ -56,20 +62,10 @@ static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
 
 v8::Persistent<v8::FunctionTemplate> j2::array_descriptor;
 
-static void
-ArrayDescriptorEquals(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  // ...
-  printf("equals\n");
-}
-
 void j2::Init(v8::Isolate *isolate) {
   v8::Local<v8::FunctionTemplate> f =
       v8::FunctionTemplate::New(isolate, ArrayDescriptorConstructor);
   f->SetClassName(v8::String::NewFromUtf8(isolate, "ArrayDescriptor"));
-
-  v8::Local<v8::Template> proto_t = f->PrototypeTemplate();
-  proto_t->Set(isolate, "equals",
-               v8::FunctionTemplate::New(isolate, ArrayDescriptorEquals));
 
   f->InstanceTemplate()->Set(v8::String::NewFromUtf8(isolate, "dims"),
                              v8::Null(isolate));
@@ -127,6 +123,21 @@ v8::Local<v8::Value> j2::FromJuliaBool(v8::Isolate *isolate,
   return v8::Boolean::New(isolate, jl_unbox_bool(value));
 }
 
+v8::Local<v8::Value> j2::FromJuliaInt32(v8::Isolate *isolate,
+                                        jl_value_t *value) {
+  return v8::Number::New(isolate, jl_unbox_int32(value));
+}
+
+v8::Local<v8::Value> j2::FromJuliaInt64(v8::Isolate *isolate,
+                                        jl_value_t *value) {
+  return v8::Number::New(isolate, jl_unbox_int64(value));
+}
+
+v8::Local<v8::Value> j2::FromJuliaFloat32(v8::Isolate *isolate,
+                                          jl_value_t *value) {
+  return v8::Number::New(isolate, jl_unbox_float32(value));
+}
+
 v8::Local<v8::Value> j2::FromJuliaFloat64(v8::Isolate *isolate,
                                           jl_value_t *value) {
   return v8::Number::New(isolate, jl_unbox_float64(value));
@@ -151,6 +162,18 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate,
                                         jl_value_t *value) {
   if (jl_is_bool(value)) {
     return FromJuliaBool(isolate, value);
+  }
+
+  if (jl_is_int32(value)) {
+    return FromJuliaInt32(isolate, value);
+  }
+
+  if (jl_is_int64(value)) {
+    return FromJuliaInt64(isolate, value);
+  }
+
+  if (jl_is_float32(value)) {
+    return FromJuliaFloat32(isolate, value);
   }
 
   if (jl_is_float64(value)) {
