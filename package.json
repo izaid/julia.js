@@ -11,7 +11,8 @@
         "url": "git+https://github.com/izaid/j2.git"
     },
     "dependencies": {
-        "mocha": "*"
+        "mocha": "*",
+        "nan": "*"
     },
     "author": "Irwin Zaid",
     "license": "ISC",
