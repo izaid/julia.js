@@ -49,10 +49,24 @@ describe("Convert", () => {
     });
 
     it("Function", () => {
-        var f = julia.eval("x -> x");
+        let f = julia.eval("() -> 0");
+        assert(f instanceof Function);
+        assert.strictEqual(0, f());
+
+        f = julia.eval("() -> \"Hello, world!\"");
+        assert(f instanceof Function);
+        assert.strictEqual("Hello, world!", f());
+
+        f = julia.eval("x -> x");
+        assert(f instanceof Function);
         assert.strictEqual(10.0, f(10.0));
 
         f = julia.eval("x -> x + 1");
+        assert(f instanceof Function);
         assert.strictEqual(11.0, f(10.0));
+
+        f = julia.eval("(x, y) -> x + y");
+        assert(f instanceof Function);
+        assert.strictEqual(5, f(2, 3));
     });
 });
