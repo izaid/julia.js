@@ -8,6 +8,8 @@ static v8::Platform *m_platform;
 static v8::Isolate *m_isolate;
 
 void jl_v8_init(const char *path) {
+  printf("Initing v8\n");
+
   class Allocator : public v8::ArrayBuffer::Allocator {
   public:
     void *Allocate(size_t length) { return new char[length]; }
@@ -41,10 +43,19 @@ void jl_v8_destroy() {
 }
 
 jl_value_t *jl_v8_eval(const char *src) {
+  Nan::HandleScope scope;
+
   Nan::MaybeLocal<Nan::BoundScript> script =
       Nan::CompileScript(v8::String::NewFromUtf8(m_isolate, src));
+  if (script.IsEmpty()) {
+    printf("BAD SCRIPT\n");
+  }
 
   Nan::MaybeLocal<v8::Value> value = Nan::RunScript(script.ToLocalChecked());
+  if (value.IsEmpty()) {
+    printf("BAD VALUE\n");
+  }
+
   return j2::FromJavaScriptValue(value.ToLocalChecked());
 
   /*
