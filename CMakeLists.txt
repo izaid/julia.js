@@ -30,3 +30,5 @@ set(libj2_SRC
 
 add_library(j2 SHARED ${libj2_SRC})
 target_link_libraries(j2 ${Julia_LIBRARY} v8 v8_libbase v8_libplatform)
+
+install(TARGETS j2 LIBRARY DESTINATION lib)
