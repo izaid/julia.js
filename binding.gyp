@@ -2,7 +2,7 @@
   "targets": [
     {
       "target_name": "julia",
-      "sources": [ "src/j2.cpp", "src/julia.cpp" ],
+      "sources": [ "src/j2.cpp", "src/embedded.cpp" ],
       "include_dirs": ["include"],
         'libraries': ['<!@(/Applications/Julia-0.5.app/Contents/Resources/julia/share/julia/julia-config.jl --ldlibs)'],
       "xcode_settings": {
