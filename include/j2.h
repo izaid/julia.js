@@ -1,5 +1,6 @@
 #include <julia.h>
-#include "v8.h"
+
+#include <v8.h>
 
 namespace j2 {
 
@@ -19,8 +20,3 @@ jl_value_t *FromJavaScriptTypedArray(v8::Local<v8::Value> value);
 jl_value_t *FromJavaScriptValue(v8::Local<v8::Value> value);
 
 } // namespace j2
-
-extern "C" void jl_v8_init(const char *path);
-extern "C" void jl_v8_destroy();
-
-extern "C" jl_value_t *jl_v8_eval(const char *src);

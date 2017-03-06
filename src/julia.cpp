@@ -1,7 +1,5 @@
 #include <node.h>
 
-#include <julia.h>
-
 #include <j2.h>
 
 void Eval(const v8::FunctionCallbackInfo<v8::Value> &info) {
