@@ -1,5 +1,5 @@
 #include <j2.h>
-#include <node.h>
+#include <v8.h>
 
 jl_value_t *j2::FromJavaScriptArray(v8::Local<v8::Value> value) {
   return jl_nothing;
