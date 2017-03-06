@@ -10,7 +10,7 @@
     "author": "Irwin Zaid",
     "license": "ISC",
     "bugs": {
-        "url": "https://github.com/izaid/julia.js/issues"
+        "url": "https://github.com/izaid/j2/issues"
     },
-    "homepage": "https://github.com/izaid/julia.js#readme"
+    "homepage": "https://github.com/izaid/j2#readme"
 }
