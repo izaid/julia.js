@@ -1,0 +1,16 @@
+{
+    "name": "j2",
+    "version": "0.1",
+    "description": "",
+    "main": "index.js",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/izaid/j2.git"
+    },
+    "author": "Irwin Zaid",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/izaid/julia.js/issues"
+    },
+    "homepage": "https://github.com/izaid/julia.js#readme"
+}
