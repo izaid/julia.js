@@ -1,24 +1,14 @@
 #include <stdio.h>
 
-#include "gtest/gtest.h"
+#include "j2_assertions.h"
 
-namespace {
-
-class J2Environment : public ::testing::Environment {
-public:
-  void SetUp() { // ...
-  }
-
-  void TearDown() {
-    // ...
-  }
-};
-
-} // anonymous namespace
+V8Environment *V8_ENVIRONMENT;
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  ::testing::AddGlobalTestEnvironment(new J2Environment());
+  V8_ENVIRONMENT = new V8Environment(argv[0]);
+  ::testing::AddGlobalTestEnvironment(new JuliaEnvironment());
+  ::testing::AddGlobalTestEnvironment(V8_ENVIRONMENT);
 
   return RUN_ALL_TESTS();
 }

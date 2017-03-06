@@ -8,6 +8,7 @@ include_directories(
 
 set(tests_src
     test_j2.cpp
+    test_julia.cpp
 )
 
 add_subdirectory(../deps/googletest-release-1.8.0 "${CMAKE_CURRENT_BINARY_DIR}/deps/googletest-release-1.8.0")
