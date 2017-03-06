@@ -158,6 +158,64 @@ v8::Local<v8::Value> j2::FromJuliaArray(v8::Isolate *isolate,
   return NewArrayDescriptor(isolate, value);
 }
 
+/*
+void JuliaCall(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  printf("JuliaCall (start)\n");
+
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::Local<v8::External> external = info.Data().As<v8::External>();
+  jl_value_t *value = static_cast<jl_value_t *>(external->Value());
+
+  // ...
+  jl_svec_t *args = jl_alloc_svec(info.Length());
+  for (int i = 0; i < jl_svec_len(args); ++i) {
+    jl_value_t *value = UnboxJuliaValue(isolate, info[i]);
+
+    jl_svec_data(args)[i] = value;
+  }
+
+  jl_value_t *u =
+      jl_call((jl_function_t *)value, jl_svec_data(args), jl_svec_len(args));
+  if (TranslateJuliaException(isolate) != 0) {
+    return;
+  }
+
+  // SetCallAsFunctionHandler
+  // call(::Type{A},x,y,z)
+
+  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+  res.Set(NewFromJuliaValue(isolate, u));
+
+  printf("JuliaCall (stop)\n");
+}
+*/
+
+v8::Local<v8::Value> j2::FromJuliaFunction(v8::Isolate *isolate,
+                                           jl_value_t *value) {
+  return v8::Function::New(
+      isolate,
+      [](const v8::FunctionCallbackInfo<v8::Value> &info) {
+        v8::Isolate *isolate = info.GetIsolate();
+
+        v8::Local<v8::External> external = info.Data().As<v8::External>();
+        jl_value_t *value = static_cast<jl_value_t *>(external->Value());
+
+        jl_svec_t *args = jl_alloc_svec(info.Length());
+        for (int i = 0; i < jl_svec_len(args); ++i) {
+          jl_value_t *value = FromJavaScriptValue(info[i]);
+
+          jl_svec_data(args)[i] = value;
+        }
+
+        jl_value_t *u = jl_call(value, jl_svec_data(args), jl_svec_len(args));
+
+        v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+        res.Set(FromJuliaValue(isolate, u));
+      },
+      v8::External::New(isolate, value));
+}
+
 v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate,
                                         jl_value_t *value) {
   if (jl_is_bool(value)) {
@@ -190,6 +248,11 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate,
 
   if (jl_is_array(value)) {
     return FromJuliaArray(isolate, value);
+  }
+
+  if (jl_subtype(value, reinterpret_cast<jl_value_t *>(jl_function_type),
+                 true)) {
+    return FromJuliaFunction(isolate, value);
   }
 
   return v8::Undefined(isolate);

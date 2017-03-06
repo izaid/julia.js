@@ -50,6 +50,9 @@ describe("Convert", () => {
 
     it("Function", () => {
         var f = julia.eval("x -> x");
-        // ...
+        assert.strictEqual(10.0, f(10.0));
+
+        f = julia.eval("x -> x + 1");
+        assert.strictEqual(11.0, f(10.0));
     });
 });
