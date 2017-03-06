@@ -1,5 +1,5 @@
 {
-    "name": "j2",
+    "name": "julia.js",
     "version": "0.0.1",
     "description": "",
     "main": "index.js",
@@ -8,16 +8,15 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/izaid/j2.git"
+        "url": "git+https://github.com/izaid/julia.js.git"
     },
     "dependencies": {
-        "mocha": "*",
-        "nan": "*"
+        "mocha": "*"
     },
     "author": "Irwin Zaid",
     "license": "ISC",
     "bugs": {
-        "url": "https://github.com/izaid/j2/issues"
+        "url": "https://github.com/izaid/julia.js/issues"
     },
-    "homepage": "https://github.com/izaid/j2#readme"
+    "homepage": "https://github.com/izaid/julia.js#readme"
 }
