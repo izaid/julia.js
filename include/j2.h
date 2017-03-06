@@ -1,14 +1,7 @@
 #include <julia.h>
 #include <v8.h>
 
-extern "C" void jl_v8_init(const char *path);
-extern "C" void jl_v8_destroy();
-
-extern "C" jl_value_t *jl_v8_eval(const char *src);
-
 namespace j2 {
-
-void Init(v8::Isolate *isolate);
 
 v8::Local<v8::Value> FromJuliaArray(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaBool(v8::Isolate *isolate, jl_value_t *value);
@@ -26,3 +19,8 @@ jl_value_t *FromJavaScriptTypedArray(v8::Local<v8::Value> value);
 jl_value_t *FromJavaScriptValue(v8::Local<v8::Value> value);
 
 } // namespace j2
+
+extern "C" void jl_v8_init(const char *path);
+extern "C" void jl_v8_destroy();
+
+extern "C" jl_value_t *jl_v8_eval(const char *src);

@@ -20,8 +20,6 @@ include_directories(
 ${Julia_INCLUDE_DIRS}
 )
 
-
-
 add_subdirectory(tests)
 
 set(libj2_SRC
