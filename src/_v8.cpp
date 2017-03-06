@@ -41,7 +41,7 @@ void jl_v8_destroy() {
 jl_value_t *jl_v8_eval(const char *src) {
   v8::Isolate::Scope isolate_scope(m_isolate);
   v8::HandleScope handle_scope(m_isolate);
-  v8::Local<v8::Context> context(v8::Context::New(m_isolate));
+  v8::Local<v8::Context> context; // = v8::Context::New(m_isolate);
   v8::Context::Scope context_scope(context);
 
   v8::Local<v8::Script> script =
