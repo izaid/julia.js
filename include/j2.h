@@ -1,5 +1,5 @@
 #include <julia.h>
-#include <node.h>
+#include "v8.h"
 
 namespace j2 {
 

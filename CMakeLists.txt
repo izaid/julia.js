@@ -20,10 +20,10 @@ include_directories(
 ${Julia_INCLUDE_DIRS}
 )
 
-add_subdirectory(tests)
+add_subdirectory(test)
 
 set(libj2_SRC
-    src/j2/j2.cpp
+    src/j2.cpp
 )
 
 add_library(j2 SHARED ${libj2_SRC})
