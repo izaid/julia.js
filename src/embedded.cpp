@@ -17,13 +17,19 @@ void Eval(const v8::FunctionCallbackInfo<v8::Value> &info) {
   res.Set(j2::FromJuliaValue(isolate, value));
 }
 
-void init(v8::Local<v8::Object> exports) {
+void Init(v8::Local<v8::Object> exports) {
+  v8::Isolate *isolate = exports->GetIsolate();
+  j2::Init(isolate);
+
+  exports->Set(
+      v8::String::NewFromUtf8(exports->GetIsolate(), "ArrayDescriptor"),
+      j2::array_descriptor.Get(isolate)->GetFunction());
+  NODE_SET_METHOD(exports, "eval", Eval);
+
   jl_init_with_image(
       "/Applications/Julia-0.5.app/Contents/Resources/julia/lib/julia",
       "/Applications/Julia-0.5.app/Contents/Resources/julia/lib/julia/"
       "sys.dylib");
-
-  NODE_SET_METHOD(exports, "eval", Eval);
 }
 
-NODE_MODULE(julia, init)
+NODE_MODULE(julia, Init)
