@@ -18,7 +18,7 @@
         'libraries': ['-lv8', '-lv8_libbase','-lv8_libplatform', '<!@(/Applications/Julia-0.5.app/Contents/Resources/julia/share/julia/julia-config.jl --ldlibs)'],
       "xcode_settings": {
           'MACOSX_DEPLOYMENT_TARGET': '10.12',
-            'OTHER_CFLAGS': ['<!@(/Applications/Julia-0.5.app/Contents/Resources/julia/share/julia/julia-config.jl --cflags)'],
+            'OTHER_CFLAGS': ['-fPIC', '<!@(/Applications/Julia-0.5.app/Contents/Resources/julia/share/julia/julia-config.jl --cflags)'],
 'OTHER_LDFLAGS': ['<!@(/Applications/Julia-0.5.app/Contents/Resources/julia/share/julia/julia-config.jl --ldflags)'],
       }
     }
