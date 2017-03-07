@@ -30,8 +30,8 @@ ArrayDescriptorConstructor(const v8::FunctionCallbackInfo<v8::Value> &info) {
 
 static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
                                                 jl_value_t *value) {
-  static std::map<intptr_t, const char *> types{
-      {(intptr_t) jl_float32_type, "Float32Array"}, {(intptr_t) jl_float64_type, "Float64Array"}};
+  static std::map<jl_datatype_t *, const char *> types;
+  types[jl_float32_type] = "Float32Array";
 
   v8::Local<v8::ObjectTemplate> instance =
       j2::array_descriptor.Get(isolate)->InstanceTemplate();
@@ -57,7 +57,7 @@ static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
   res->Set(
       v8::String::NewFromUtf8(isolate, "data"),
       NewTypedArray(isolate,
-                    types[reinterpret_cast<intptr_t>(jl_array_eltype(value))],
+                    types[static_cast<jl_datatype_t *>(jl_array_eltype(value))],
                     buffer->Get(v8::String::NewFromUtf8(isolate, "buffer")), 0,
                     jl_array_len(value)));
 
