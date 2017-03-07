@@ -1,7 +1,14 @@
-#include <j2.h>
+#include <map>
 
+#if __has_include(<node.h>)
+#define J2_USING_NODE
 #include <node.h>
 #include <node_buffer.h>
+#else
+#include <v8.h>
+#endif
+
+#include <j2.h>
 
 v8::Local<v8::Object> NewTypedArray(v8::Isolate *isolate, const char *name,
                                     v8::Local<v8::Value> buffer,
@@ -26,10 +33,9 @@ ArrayDescriptorConstructor(const v8::FunctionCallbackInfo<v8::Value> &info) {
   info.This()->Set(v8::String::NewFromUtf8(isolate, "data"), info[1]);
 }
 
-#include <map>
-
 static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
                                                 jl_value_t *value) {
+
   static std::map<jl_datatype_t *, const char *> types;
   types[jl_float32_type] = "Float32Array";
 
@@ -44,6 +50,7 @@ static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
   }
   res->Set(v8::String::NewFromUtf8(isolate, "dims"), dims);
 
+#ifdef J2_USING_NODE
   v8::Local<v8::Object> buffer =
       node::Buffer::New(isolate, static_cast<char *>(jl_array_data(value)),
                         jl_array_len(value) *
@@ -60,6 +67,7 @@ static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
                     types[static_cast<jl_datatype_t *>(jl_array_eltype(value))],
                     buffer->Get(v8::String::NewFromUtf8(isolate, "buffer")), 0,
                     jl_array_len(value)));
+#endif
 
   return res;
 }
