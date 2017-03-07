@@ -24,6 +24,8 @@ v8::Local<v8::Value> FromJuliaValue(v8::Isolate *isolate, jl_value_t *value);
 jl_value_t *FromJavaScriptArray(v8::Local<v8::Value> value);
 jl_value_t *FromJavaScriptJuliaArrayDescriptor(v8::Isolate *isolate,
                                                v8::Local<v8::Value> value);
+jl_value_t *FromJavaScriptJuliaConvert(v8::Isolate *isolate,
+                                       v8::Local<v8::Value> value);
 jl_value_t *FromJavaScriptBoolean(v8::Local<v8::Value> value);
 jl_value_t *FromJavaScriptNull(v8::Local<v8::Value> value);
 jl_value_t *FromJavaScriptNumber(v8::Local<v8::Value> value);
