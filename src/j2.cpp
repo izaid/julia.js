@@ -125,7 +125,7 @@ jl_value_t *j2::FromJavaScriptObject(v8::Isolate *isolate,
   printf("construct_name = %s\n", *s);
 
   if (value.As<v8::Object>()->GetConstructorName()->Equals(
-          v8::String::NewFromUtf8(isolate, "Julia.ArrayDescriptor"))) {
+          v8::String::NewFromUtf8(isolate, "ArrayDescriptor"))) {
     return FromJavaScriptJuliaArrayDescriptor(isolate, value);
   }
 
