@@ -26,11 +26,11 @@ ArrayDescriptorConstructor(const v8::FunctionCallbackInfo<v8::Value> &info) {
   info.This()->Set(v8::String::NewFromUtf8(isolate, "data"), info[1]);
 }
 
-#include <map>
+#include <unordered_map>
 
 static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
                                                 jl_value_t *value) {
-  static std::map<jl_datatype_t *, const char *> types{
+  static std::unordered_map<jl_datatype_t *, const char *> types{
       {jl_float32_type, "Float32Array"}, {jl_float64_type, "Float64Array"}};
 
   v8::Local<v8::ObjectTemplate> instance =
