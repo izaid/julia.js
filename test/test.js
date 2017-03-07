@@ -46,6 +46,10 @@ describe("Convert", () => {
         assert.deepEqual(new julia.ArrayDescriptor([
             2, 2
         ], new Float32Array([0, 1, 2, 3])), julia.eval("[[0.0f0, 1.0f0] [2.0f0, 3.0f0]]"));
+
+        //        for (var i = 0; i < 2500; ++i) {
+        //          var a = julia.eval("zeros(Float32, 512 * 512)");
+        //    }
     });
 
     it("Function", () => {
@@ -68,5 +72,22 @@ describe("Convert", () => {
         f = julia.eval("(x, y) -> x + y");
         assert(f instanceof Function);
         assert.strictEqual(5, f(2, 3));
+    });
+
+    it("Type", () => {
+        assert.strictEqual(Boolean, julia.eval("Bool"));
+
+        let Foo = julia.eval(`type Foo
+           qux::Bool
+           count::Int32
+       end; function (self::Foo)(x) 12 + x + self.count end; Foo`);
+        console.log(Foo)
+
+        var val = new Foo(true, 1);
+        assert(val instanceof Foo);
+        console.dir(val);
+
+        var res = val(4);
+        console.log(res);
     });
 });

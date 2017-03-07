@@ -48,7 +48,11 @@ static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
       node::Buffer::New(isolate, static_cast<char *>(jl_array_data(value)),
                         jl_array_len(value) *
                             reinterpret_cast<jl_array_t *>(value)->elsize,
-                        [](char *d, void *value) {}, value)
+                        [](char *d, void *value) {
+                          // ...
+                          //                          printf("DEALLOCATING\n");
+                        },
+                        value)
           .ToLocalChecked();
   res->Set(
       v8::String::NewFromUtf8(isolate, "data"),
@@ -158,66 +162,147 @@ v8::Local<v8::Value> j2::FromJuliaArray(v8::Isolate *isolate,
   return NewArrayDescriptor(isolate, value);
 }
 
-/*
 void JuliaCall(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  printf("JuliaCall (start)\n");
-
   v8::Isolate *isolate = info.GetIsolate();
 
   v8::Local<v8::External> external = info.Data().As<v8::External>();
   jl_value_t *value = static_cast<jl_value_t *>(external->Value());
 
-  // ...
   jl_svec_t *args = jl_alloc_svec(info.Length());
   for (int i = 0; i < jl_svec_len(args); ++i) {
-    jl_value_t *value = UnboxJuliaValue(isolate, info[i]);
+    jl_value_t *value = j2::FromJavaScriptValue(info[i]);
 
     jl_svec_data(args)[i] = value;
   }
 
-  jl_value_t *u =
-      jl_call((jl_function_t *)value, jl_svec_data(args), jl_svec_len(args));
-  if (TranslateJuliaException(isolate) != 0) {
-    return;
-  }
-
-  // SetCallAsFunctionHandler
-  // call(::Type{A},x,y,z)
+  jl_value_t *u = jl_call(value, jl_svec_data(args), jl_svec_len(args));
 
   v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-  res.Set(NewFromJuliaValue(isolate, u));
-
-  printf("JuliaCall (stop)\n");
+  res.Set(j2::FromJuliaValue(isolate, u));
 }
-*/
+
+void JuliaCall2(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
+  jl_value_t *object =
+      static_cast<jl_value_t *>(wrapper.As<v8::External>()->Value());
+
+  jl_svec_t *args = jl_alloc_svec(info.Length());
+  for (int i = 0; i < jl_svec_len(args); ++i) {
+    jl_value_t *value = j2::FromJavaScriptValue(info[i]);
+
+    jl_svec_data(args)[i] = value;
+  }
+
+  jl_value_t *u = jl_call(object, jl_svec_data(args), jl_svec_len(args));
+
+  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+  res.Set(j2::FromJuliaValue(isolate, u));
+}
 
 v8::Local<v8::Value> j2::FromJuliaFunction(v8::Isolate *isolate,
                                            jl_value_t *value) {
-  return v8::Function::New(
+  return v8::Function::New(isolate, JuliaCall,
+                           v8::External::New(isolate, value));
+}
+
+void JuliaConstruct(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::Local<v8::External> external = info.Data().As<v8::External>();
+  jl_value_t *value = static_cast<jl_value_t *>(external->Value());
+
+  jl_svec_t *args = jl_alloc_svec(info.Length());
+  for (int i = 0; i < jl_svec_len(args); ++i) {
+    jl_value_t *value = j2::FromJavaScriptValue(info[i]);
+
+    jl_svec_data(args)[i] = value;
+  }
+
+  jl_value_t *u = jl_call(value, jl_svec_data(args), jl_svec_len(args));
+  //  printf("value = %i\n", jl_unbox_bool(u));
+
+  //  info.This() = j2::FromJuliaValue(isolate, u).As<v8::Object>();
+
+  info.This()->SetInternalField(0, v8::External::New(isolate, u));
+}
+
+void ImportGet(v8::Local<v8::Name> name,
+               const v8::PropertyCallbackInfo<v8::Value> &info) {
+  printf("getting...\n");
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
+  jl_value_t *object =
+      static_cast<jl_value_t *>(wrapper.As<v8::External>()->Value());
+
+  v8::String::Utf8Value s(name);
+  if (s.length() != 0) {
+    jl_value_t *value = jl_get_field(object, *s);
+    if (value != nullptr) {
+      v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+      res.Set(j2::FromJuliaValue(isolate, value));
+    }
+  }
+}
+
+void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
+  printf("enumerating...\n");
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
+  jl_value_t *value =
+      static_cast<jl_value_t *>(wrapper.As<v8::External>()->Value());
+
+  jl_datatype_t *type = (jl_datatype_t *)jl_typeof(value);
+
+  size_t length = jl_field_count(type);
+  printf("field_count = %i\n", length);
+
+  v8::Local<v8::Array> properties = v8::Array::New(info.GetIsolate(), length);
+  for (int i = 0; i < length; ++i) {
+    jl_sym_t *name = jl_field_name(type, i);
+    properties->Set(
+        v8::Number::New(isolate, i),
+        v8::String::NewFromUtf8(
+            isolate, jl_symbol_name(reinterpret_cast<jl_sym_t *>(name))));
+  }
+
+  info.GetReturnValue().Set(properties);
+}
+
+v8::Local<v8::Value> j2::FromJuliaType(v8::Isolate *isolate,
+                                       jl_value_t *value) {
+  if (reinterpret_cast<jl_datatype_t *>(value) == jl_bool_type) {
+    return isolate->GetCurrentContext()->Global()->Get(
+        v8::String::NewFromUtf8(isolate, "Boolean"));
+  }
+
+  v8::Local<v8::FunctionTemplate> constructor = v8::FunctionTemplate::New(
+      isolate, JuliaConstruct, v8::External::New(isolate, value));
+  constructor->SetClassName(v8::String::NewFromUtf8(
       isolate,
-      [](const v8::FunctionCallbackInfo<v8::Value> &info) {
-        v8::Isolate *isolate = info.GetIsolate();
+      jl_symbol_name(reinterpret_cast<jl_datatype_t *>(value)->name->name)));
 
-        v8::Local<v8::External> external = info.Data().As<v8::External>();
-        jl_value_t *value = static_cast<jl_value_t *>(external->Value());
+  v8::Local<v8::ObjectTemplate> instance = constructor->InstanceTemplate();
+  instance->SetInternalFieldCount(1);
+  instance->SetCallAsFunctionHandler(JuliaCall2);
 
-        jl_svec_t *args = jl_alloc_svec(info.Length());
-        for (int i = 0; i < jl_svec_len(args); ++i) {
-          jl_value_t *value = FromJavaScriptValue(info[i]);
+  v8::NamedPropertyHandlerConfiguration handler;
+  handler.getter = ImportGet;
+  handler.enumerator = ImportEnumerator;
+  instance->SetHandler(handler);
 
-          jl_svec_data(args)[i] = value;
-        }
-
-        jl_value_t *u = jl_call(value, jl_svec_data(args), jl_svec_len(args));
-
-        v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-        res.Set(FromJuliaValue(isolate, u));
-      },
-      v8::External::New(isolate, value));
+  return constructor->GetFunction();
 }
 
 v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate,
                                         jl_value_t *value) {
+  if (value == nullptr) {
+    return v8::Undefined(isolate);
+  }
+
   if (jl_is_bool(value)) {
     return FromJuliaBool(isolate, value);
   }
@@ -253,6 +338,10 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate,
   if (jl_subtype(value, reinterpret_cast<jl_value_t *>(jl_function_type),
                  true)) {
     return FromJuliaFunction(isolate, value);
+  }
+
+  if (jl_is_datatype(value)) {
+    return FromJuliaType(isolate, value);
   }
 
   return v8::Undefined(isolate);
