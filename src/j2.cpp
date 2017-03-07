@@ -313,8 +313,8 @@ void ModuleGet(v8::Local<v8::Name> name,
     if (value != nullptr) {
       //    JL_GC_PUSH1(&value);
 
-        v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-       res.Set(j2::FromJuliaValue(isolate, value));
+      v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+      res.Set(j2::FromJuliaValue(isolate, value));
 
       //      JL_GC_POP();
     }
@@ -361,11 +361,13 @@ void ModuleEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
   v8::Local<v8::Array> properties = v8::Array::New(info.GetIsolate(), length);
   for (size_t i = 0; i < length; ++i) {
     jl_value_t *v = jl_array_ptr_ref(names, i);
-
-    properties->Set(
-        v8::Number::New(isolate, i),
-        v8::String::NewFromUtf8(
-            isolate, jl_symbol_name(reinterpret_cast<jl_sym_t *>(v))));
+    if (jl_symbol_name(reinterpret_cast<jl_sym_t *>(v)) !=
+        jl_symbol_name(((jl_module_t *) module)->name)) {
+      properties->Set(
+          v8::Number::New(isolate, i),
+          v8::String::NewFromUtf8(
+              isolate, jl_symbol_name(reinterpret_cast<jl_sym_t *>(v))));
+    }
   }
 
   info.GetReturnValue().Set(properties);
