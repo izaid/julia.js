@@ -31,7 +31,7 @@ ArrayDescriptorConstructor(const v8::FunctionCallbackInfo<v8::Value> &info) {
 static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
                                                 jl_value_t *value) {
   static std::map<jl_datatype_t *, const char *> types{
-      {jl_float32_type, "Float32Array"}};
+      {jl_float32_type, "Float32Array"}, {jl_float64_type, "Float64Array"}};
 
   v8::Local<v8::ObjectTemplate> instance =
       j2::array_descriptor.Get(isolate)->InstanceTemplate();
@@ -362,7 +362,7 @@ void ModuleEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
   for (size_t i = 0; i < length; ++i) {
     jl_value_t *v = jl_array_ptr_ref(names, i);
     if (jl_symbol_name(reinterpret_cast<jl_sym_t *>(v)) !=
-        jl_symbol_name(((jl_module_t *) module)->name)) {
+        jl_symbol_name(((jl_module_t *)module)->name)) {
       properties->Set(
           v8::Number::New(isolate, i),
           v8::String::NewFromUtf8(
