@@ -266,7 +266,6 @@ void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
   jl_datatype_t *type = (jl_datatype_t *)jl_typeof(value);
 
   size_t length = jl_field_count(type);
-  printf("field_count = %i\n", length);
 
   v8::Local<v8::Array> properties = v8::Array::New(info.GetIsolate(), length);
   for (int i = 0; i < length; ++i) {
