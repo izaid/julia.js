@@ -74,7 +74,9 @@ static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
 
 v8::Persistent<v8::FunctionTemplate> j2::array_descriptor;
 
-void j2::Init(v8::Isolate *isolate) {
+void j2::Inject(v8::Local<v8::Object> exports) {
+  v8::Isolate *isolate = exports->GetIsolate();
+
   v8::Local<v8::FunctionTemplate> f =
       v8::FunctionTemplate::New(isolate, ArrayDescriptorConstructor);
   f->SetClassName(v8::String::NewFromUtf8(isolate, "ArrayDescriptor"));
@@ -83,6 +85,10 @@ void j2::Init(v8::Isolate *isolate) {
                              v8::Null(isolate));
 
   array_descriptor.Reset(isolate, f);
+
+  exports->Set(
+      v8::String::NewFromUtf8(exports->GetIsolate(), "ArrayDescriptor"),
+      j2::array_descriptor.Get(isolate)->GetFunction());
 }
 
 jl_value_t *j2::FromJavaScriptArray(v8::Local<v8::Value> value) {

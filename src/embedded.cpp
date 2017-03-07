@@ -36,12 +36,10 @@ void Import(v8::Local<v8::Name> name,
 }
 
 void Init(v8::Local<v8::Object> exports) {
-  v8::Isolate *isolate = exports->GetIsolate();
-  j2::Init(isolate);
+  j2::Inject(exports);
 
-  exports->Set(
-      v8::String::NewFromUtf8(exports->GetIsolate(), "ArrayDescriptor"),
-      j2::array_descriptor.Get(isolate)->GetFunction());
+  v8::Isolate *isolate = exports->GetIsolate();
+
   NODE_SET_METHOD(exports, "eval", Eval);
 
   v8::Local<v8::ObjectTemplate> import_template =
