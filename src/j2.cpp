@@ -127,7 +127,7 @@ jl_value_t *UnboxJuliaArrayType(v8::Isolate *isolate,
   jl_datatype_t *eltype = UnboxJuliaArrayElementType(isolate, value);
   JL_GC_PUSH1(&eltype);
 
-  jl_value_t *res = jl_apply_array_type(eltype, 2);
+  jl_value_t *res = jl_apply_array_type(eltype, 1);
   JL_GC_POP();
 
   return res;
@@ -156,6 +156,8 @@ jl_value_t *j2::FromJavaScriptJuliaArrayDescriptor(v8::Isolate *isolate,
   jl_array_t *res =
       jl_ptr_to_array(type, buffer->GetContents().Data(), dims, 0);
   JL_GC_POP();
+
+  // register a finalizer on res that deletes a copy of the javascript object
 
   return (jl_value_t *)res;
 }
