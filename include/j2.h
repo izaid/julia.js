@@ -14,9 +14,10 @@ v8::Local<v8::Value> FromJuliaInt32(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaInt64(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaFloat32(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaFloat64(v8::Isolate *isolate, jl_value_t *value);
-v8::Local<v8::Value> FromJuliaString(v8::Isolate *isolate, jl_value_t *value);
-v8::Local<v8::Value> FromJuliaNothing(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaFunction(v8::Isolate *isolate, jl_value_t *value);
+v8::Local<v8::Value> FromJuliaString(v8::Isolate *isolate, jl_value_t *value);
+v8::Local<v8::Value> FromJuliaModule(v8::Isolate *isolate, jl_value_t *value);
+v8::Local<v8::Value> FromJuliaNothing(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaType(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaValue(v8::Isolate *isolate, jl_value_t *value);
 

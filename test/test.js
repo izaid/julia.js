@@ -85,9 +85,17 @@ describe("Convert", () => {
 
         var val = new Foo(true, 1);
         assert(val instanceof Foo);
-        console.dir(val);
+        assert.deepEqual([
+            "qux", "count"
+        ], Object.keys(val));
+        assert.strictEqual(true, val.qux);
+        assert.strictEqual(1, val.count);
 
-        var res = val(4);
-        console.log(res);
+        assert.strictEqual(17, val(4));
+    });
+
+    it("Module", () => {
+        let Test = julia.eval("Test");
+        console.dir(Test);
     });
 });
