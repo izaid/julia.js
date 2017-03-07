@@ -95,9 +95,69 @@ jl_value_t *j2::FromJavaScriptArray(v8::Local<v8::Value> value) {
   return jl_nothing;
 }
 
+jl_value_t *UnboxJuliaArrayDims(v8::Isolate *isolate,
+                                v8::Local<v8::Array> value) {
+  uint32_t ndims =
+      value->Get(v8::String::NewFromUtf8(isolate, "length"))->NumberValue();
+  std::vector<uint64_t> dims(ndims);
+  for (uint32_t i = 0; i < ndims; ++i) {
+    dims[i] = value->Get(i)->NumberValue();
+  }
+
+  jl_value_t *type = jl_tupletype_fill(ndims, (jl_value_t *)jl_uint64_type);
+  JL_GC_PUSH1(&type);
+
+  jl_value_t *tuple = jl_new_bits(type, dims.data());
+  JL_GC_POP();
+
+  return tuple;
+}
+
+jl_datatype_t *UnboxJuliaArrayElementType(v8::Isolate *isolate,
+                                          v8::Local<v8::Object> value) {
+  if (value->IsFloat32Array()) {
+    return jl_float32_type;
+  }
+
+  return NULL;
+}
+
+jl_value_t *UnboxJuliaArrayType(v8::Isolate *isolate,
+                                v8::Local<v8::Object> value) {
+  jl_datatype_t *eltype = UnboxJuliaArrayElementType(isolate, value);
+  JL_GC_PUSH1(&eltype);
+
+  jl_value_t *res = jl_apply_array_type(eltype, 2);
+  JL_GC_POP();
+
+  return res;
+}
+
 jl_value_t *j2::FromJavaScriptJuliaArrayDescriptor(v8::Isolate *isolate,
                                                    v8::Local<v8::Value> value) {
-  return jl_box_float64(-7.0);
+  v8::Local<v8::Object> data =
+      value.As<v8::Object>()
+          ->Get(v8::String::NewFromUtf8(isolate, "data"))
+          .As<v8::Object>();
+
+  jl_value_t *dims;
+  jl_value_t *type;
+  JL_GC_PUSH2(&type, &dims);
+
+  dims = UnboxJuliaArrayDims(isolate,
+                             value.As<v8::Object>()
+                                 ->Get(v8::String::NewFromUtf8(isolate, "dims"))
+                                 .As<v8::Array>());
+  type = UnboxJuliaArrayType(isolate, data);
+  v8::Local<v8::ArrayBuffer> buffer =
+      data->Get(v8::String::NewFromUtf8(isolate, "buffer"))
+          .As<v8::ArrayBuffer>();
+
+  jl_array_t *res =
+      jl_ptr_to_array(type, buffer->GetContents().Data(), dims, 0);
+  JL_GC_POP();
+
+  return (jl_value_t *)res;
 }
 
 jl_value_t *j2::FromJavaScriptBoolean(v8::Local<v8::Value> value) {
