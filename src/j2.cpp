@@ -95,6 +95,11 @@ jl_value_t *j2::FromJavaScriptArray(v8::Local<v8::Value> value) {
   return jl_nothing;
 }
 
+jl_value_t *j2::FromJavaScriptJuliaArrayDescriptor(v8::Isolate *isolate,
+                                                   v8::Local<v8::Value> value) {
+  return jl_box_float64(-7.0);
+}
+
 jl_value_t *j2::FromJavaScriptBoolean(v8::Local<v8::Value> value) {
   return jl_box_bool(value->ToBoolean()->Value());
 }
@@ -112,7 +117,18 @@ jl_value_t *j2::FromJavaScriptNumber(v8::Local<v8::Value> value) {
   return jl_box_float64(value->ToNumber()->Value());
 }
 
-jl_value_t *j2::FromJavaScriptValue(v8::Local<v8::Value> value) {
+jl_value_t *j2::FromJavaScriptObject(v8::Isolate *isolate,
+                                     v8::Local<v8::Value> value) {
+  if (value.As<v8::Object>()->GetConstructorName()->Equals(
+          v8::String::NewFromUtf8(isolate, "ArrayDescriptor"))) {
+    return FromJavaScriptJuliaArrayDescriptor(isolate, value);
+  }
+
+  return jl_nothing;
+}
+
+jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
+                                    v8::Local<v8::Value> value) {
   if (value->IsBoolean()) {
     return FromJavaScriptBoolean(value);
   }
@@ -131,6 +147,10 @@ jl_value_t *j2::FromJavaScriptValue(v8::Local<v8::Value> value) {
 
   if (value->IsArray()) {
     return FromJavaScriptArray(value);
+  }
+
+  if (value->IsObject()) {
+    return FromJavaScriptObject(isolate, value);
   }
 
   return jl_nothing;
@@ -184,7 +204,7 @@ void JuliaCall(const v8::FunctionCallbackInfo<v8::Value> &info) {
 
   jl_svec_t *args = jl_alloc_svec(info.Length());
   for (int i = 0; i < jl_svec_len(args); ++i) {
-    jl_value_t *value = j2::FromJavaScriptValue(info[i]);
+    jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
 
     jl_svec_data(args)[i] = value;
   }
@@ -204,7 +224,7 @@ void JuliaCall2(const v8::FunctionCallbackInfo<v8::Value> &info) {
 
   jl_svec_t *args = jl_alloc_svec(info.Length());
   for (int i = 0; i < jl_svec_len(args); ++i) {
-    jl_value_t *value = j2::FromJavaScriptValue(info[i]);
+    jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
 
     jl_svec_data(args)[i] = value;
   }
@@ -229,7 +249,7 @@ void JuliaConstruct(const v8::FunctionCallbackInfo<v8::Value> &info) {
 
   jl_svec_t *args = jl_alloc_svec(info.Length());
   for (int i = 0; i < jl_svec_len(args); ++i) {
-    jl_value_t *value = j2::FromJavaScriptValue(info[i]);
+    jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
 
     jl_svec_data(args)[i] = value;
   }
