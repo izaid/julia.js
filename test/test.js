@@ -2,6 +2,9 @@ var assert = require('assert');
 
 var Julia = require('../build/Release/julia.node');
 
+// everything returns Julia objects, but give them valueOf?
+// except for primitives for which there is an exact mapping
+
 describe("Convert", () => {
     it("Bool", () => {
         assert.strictEqual(true, Julia.eval("true"));
@@ -9,8 +12,8 @@ describe("Convert", () => {
     });
 
     it("Int32", () => {
-        assert.strictEqual(0, Julia.eval("Int32(0)"));
-        assert.strictEqual(1, Julia.eval("Int32(1)"));
+        assert.strictEqual(0, Julia.eval("Int32(0)").valueOf());
+        assert.strictEqual(1, Julia.eval("Int32(1)").valueOf());
     });
 
     it("Int64", () => {
@@ -19,8 +22,8 @@ describe("Convert", () => {
     });
 
     it("Float32", () => {
-        assert.strictEqual(0.0, Julia.eval("0.0f0"));
-        assert.strictEqual(0.5, Julia.eval("0.5f0"));
+        assert.strictEqual(0.0, Julia.eval("0.0f0").valueOf());
+        assert.strictEqual(0.5, Julia.eval("0.5f0").valueOf());
     });
 
     it("Float64", () => {
@@ -29,11 +32,21 @@ describe("Convert", () => {
     });
 
     it("Complex64", () => {
-        assert.deepEqual(new Julia.Complex({re: 0.0, im: 1.0}), Julia.eval("1.0f0im"));
+        assert.deepStrictEqual({
+            re: 0.0,
+            im: 1.0
+        }, Julia.eval("1.0f0im").valueOf());
     });
 
     it("Complex128", () => {
-        assert.deepEqual(new Julia.Complex({re: 0.0, im: 1.0}), Julia.eval("1.0im"));
+        assert.deepStrictEqual({
+            re: 0.0,
+            im: 1.0
+        }, Julia.eval("1.0im").valueOf());
+        assert.deepStrictEqual({
+            re: 1.0,
+            im: 1.0
+        }, Julia.eval("1.0 + 1.0im").valueOf());
     });
 
     it("String", () => {
@@ -46,24 +59,26 @@ describe("Convert", () => {
     });
 
     it("Tuple", () => {
-        assert.deepEqual(new Julia.Tuple([]), Julia.eval("()"));
+        assert.deepStrictEqual([], Julia.eval("()").valueOf());
 
-        assert.deepEqual(new Julia.Tuple(["Hello, world!"]), Julia.eval("(\"Hello, world!\",)"));
+        assert.deepStrictEqual(["Hello, world!"], Julia.eval("(\"Hello, world!\",)").valueOf());
 
-        assert.deepEqual(new Julia.Tuple([0, 1, 2, 3, 4]), Julia.eval("(0, 1, 2, 3, 4)"));
+        assert.deepStrictEqual([
+            0, 1, 2, 3, 4
+        ], Julia.eval("(0, 1, 2, 3, 4)").valueOf());
     });
 
     it("Array", () => {
-        assert.deepEqual(new Julia.Array({
+        assert.deepEqual({
             dims: [5],
             data: new Float32Array([0, 1, 2, 3, 4])
-        }), Julia.eval("[0.0f0, 1.0f0, 2.0f0, 3.0f0, 4.0f0]"));
-        assert.deepEqual(new Julia.Array({
+        }, Julia.eval("[0.0f0, 1.0f0, 2.0f0, 3.0f0, 4.0f0]").valueOf());
+        assert.deepEqual({
             dims: [
                 2, 2
             ],
             data: new Float32Array([0, 1, 2, 3])
-        }), Julia.eval("[[0.0f0, 1.0f0] [2.0f0, 3.0f0]]"));
+        }, Julia.eval("[[0.0f0, 1.0f0] [2.0f0, 3.0f0]]").valueOf());
 
         //        for (var i = 0; i < 2500; ++i) {
         //          var a = julia.eval("zeros(Float32, 512 * 512)");
@@ -102,6 +117,7 @@ describe("Convert", () => {
         console.log(Foo)
 
         var val = new Foo(true, 1);
+        console.log(val.valueOf());
         assert(val instanceof Foo);
         assert.deepEqual([
             "qux", "count"

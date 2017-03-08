@@ -14,7 +14,7 @@ void Eval(const v8::FunctionCallbackInfo<v8::Value> &info) {
   jl_value_t *value = jl_eval_string(*s);
 
   v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-  res.Set(j2::FromJuliaValue(isolate, value));
+  res.Set(j2::FromJuliaValue(isolate, value, true));
 }
 
 #include <sstream>
@@ -35,17 +35,7 @@ void Import(v8::Local<v8::Name> name,
   }
 }
 
-//static v8::Persistent<v8::Object> g_exports;
-
-//void RegisterJuliaType(const char *name) {
-//  v8::Local<v8::Object> exports = g_exports.Get(info.GetIsolate());
-//  exports->Set(v8::String::NewFromUtf8(info.GetIsolate(), name),
-//               v8::String::NewFromUtf8(info.GetIsolate(), "Hello, world!"));
-//}
-
 void Init(v8::Local<v8::Object> exports) {
-  j2::Inject(exports);
-
   v8::Isolate *isolate = exports->GetIsolate();
 
   NODE_SET_METHOD(exports, "eval", Eval);
@@ -65,8 +55,6 @@ void Init(v8::Local<v8::Object> exports) {
       "/Applications/Julia-0.5.app/Contents/Resources/julia/lib/julia",
       "/Applications/Julia-0.5.app/Contents/Resources/julia/lib/julia/"
       "sys.dylib");
-
-//  g_exports.Reset(isolate, exports);
 }
 
 NODE_MODULE(julia, Init)

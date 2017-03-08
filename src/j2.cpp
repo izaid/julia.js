@@ -13,9 +13,7 @@
 
 namespace j2 {
 
-static std::map<std::string, Conversion> conversions{
-    {"Array", {FromJavaScriptJuliaArrayDescriptor, FromJuliaArray}},
-    {"Tuple", {NULL, FromJuliaTuple}}};
+static std::map<std::string, v8::UniquePersistent<v8::FunctionTemplate>> types;
 
 } // namespace j2
 
@@ -79,33 +77,6 @@ static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
   return res;
 }
 
-v8::Persistent<v8::FunctionTemplate> j2::conversion;
-
-static void
-ConvertConstructor(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  info.This()->Set(v8::String::NewFromUtf8(isolate, "name"), info[0]);
-  info.This()->Set(v8::String::NewFromUtf8(isolate, "value"), info[1]);
-}
-
-void j2::Inject(v8::Local<v8::Object> exports) {
-  v8::Isolate *isolate = exports->GetIsolate();
-
-  v8::Local<v8::FunctionTemplate> convert =
-      v8::FunctionTemplate::New(isolate, ConvertConstructor);
-  convert->SetClassName(v8::String::NewFromUtf8(isolate, "Conversion"));
-
-  conversion.Reset(isolate, convert);
-
-  exports->Set(v8::String::NewFromUtf8(exports->GetIsolate(), "Conversion"),
-               convert->GetFunction());
-
-  RegisterJuliaType(exports, "Array", nullptr, FromJuliaArray);
-  RegisterJuliaType(exports, "Complex", nullptr, FromJuliaComplex);
-  RegisterJuliaType(exports, "Tuple", nullptr, FromJuliaTuple);
-}
-
 jl_value_t *j2::FromJavaScriptArray(v8::Local<v8::Value> value) {
   return jl_nothing;
 }
@@ -146,18 +117,6 @@ jl_value_t *UnboxJuliaArrayType(v8::Isolate *isolate,
   JL_GC_POP();
 
   return res;
-}
-
-jl_value_t *j2::FromJavaScriptJuliaConvert(v8::Isolate *isolate,
-                                           v8::Local<v8::Value> value) {
-  v8::String::Utf8Value s(
-      value.As<v8::Object>()->Get(v8::String::NewFromUtf8(isolate, "name")));
-
-  Conversion pair = conversions[*s];
-
-  return pair.FromJavaScriptValue(
-      isolate,
-      value.As<v8::Object>()->Get(v8::String::NewFromUtf8(isolate, "value")));
 }
 
 jl_value_t *j2::FromJavaScriptJuliaArrayDescriptor(v8::Isolate *isolate,
@@ -213,11 +172,13 @@ jl_value_t *j2::FromJavaScriptObject(v8::Isolate *isolate,
   v8::String::Utf8Value s(x);
   printf("construct_name = %s\n", *s);
 
-  if (value.As<v8::Object>()->GetConstructorName()->Equals(
-          v8::String::NewFromUtf8(isolate, "Conversion"))) {
-    printf("Convert success\n");
-    return FromJavaScriptJuliaConvert(isolate, value);
-  }
+  /*
+    if (value.As<v8::Object>()->GetConstructorName()->Equals(
+            v8::String::NewFromUtf8(isolate, "Conversion"))) {
+      printf("Convert success\n");
+      return FromJavaScriptJuliaConvert(isolate, value);
+    }
+  */
 
   return jl_nothing;
 }
@@ -254,45 +215,6 @@ jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
 v8::Local<v8::Value> j2::FromJuliaBool(v8::Isolate *isolate,
                                        jl_value_t *value) {
   return v8::Boolean::New(isolate, jl_unbox_bool(value));
-}
-
-v8::Local<v8::Value> j2::FromJuliaComplex64(v8::Isolate *isolate,
-                                            jl_value_t *value) {
-  v8::Local<v8::Object> res = v8::Object::New(isolate);
-  res->Set(
-      v8::String::NewFromUtf8(isolate, "re"),
-      v8::Number::New(isolate, jl_unbox_float32(jl_get_field(value, "re"))));
-  res->Set(
-      v8::String::NewFromUtf8(isolate, "im"),
-      v8::Number::New(isolate, jl_unbox_float32(jl_get_field(value, "im"))));
-
-  return res;
-}
-
-v8::Local<v8::Value> j2::FromJuliaComplex128(v8::Isolate *isolate,
-                                             jl_value_t *value) {
-  v8::Local<v8::Object> res = v8::Object::New(isolate);
-  res->Set(
-      v8::String::NewFromUtf8(isolate, "re"),
-      v8::Number::New(isolate, jl_unbox_float64(jl_get_field(value, "re"))));
-  res->Set(
-      v8::String::NewFromUtf8(isolate, "im"),
-      v8::Number::New(isolate, jl_unbox_float64(jl_get_field(value, "im"))));
-
-  return res;
-}
-
-v8::Local<v8::Value> j2::FromJuliaComplex(v8::Isolate *isolate,
-                                          jl_value_t *value) {
-  if (jl_tparam0(jl_typeof(value)) ==
-      reinterpret_cast<jl_value_t *>(jl_float32_type)) {
-    return FromJuliaComplex64(isolate, value);
-  }
-
-  if (jl_tparam0(jl_typeof(value)) ==
-      reinterpret_cast<jl_value_t *>(jl_float64_type)) {
-    return FromJuliaComplex128(isolate, value);
-  }
 }
 
 v8::Local<v8::Value> j2::FromJuliaInt32(v8::Isolate *isolate,
@@ -457,11 +379,29 @@ v8::Local<v8::Value> j2::FromJuliaType(v8::Isolate *isolate,
         v8::String::NewFromUtf8(isolate, "Boolean"));
   }
 
+  return NewJavaScriptType(isolate, reinterpret_cast<jl_datatype_t *>(value))
+      ->GetFunction();
+}
+
+static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+  jl_value_t *value = static_cast<jl_value_t *>(
+      info.This()->GetInternalField(0).As<v8::External>()->Value());
+
+  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+  res.Set(j2::FromJuliaValue(isolate, value, false));
+}
+
+v8::Local<v8::FunctionTemplate> j2::NewJavaScriptType(v8::Isolate *isolate,
+                                                      jl_datatype_t *type) {
   v8::Local<v8::FunctionTemplate> constructor = v8::FunctionTemplate::New(
-      isolate, JuliaConstruct, v8::External::New(isolate, value));
-  constructor->SetClassName(v8::String::NewFromUtf8(
-      isolate,
-      jl_symbol_name(reinterpret_cast<jl_datatype_t *>(value)->name->name)));
+      isolate, JuliaConstruct, v8::External::New(isolate, type));
+  constructor->SetClassName(
+      v8::String::NewFromUtf8(isolate, jl_symbol_name(type->name->name)));
+
+  constructor->PrototypeTemplate()->Set(
+      v8::String::NewFromUtf8(isolate, "valueOf"),
+      v8::FunctionTemplate::New(isolate, ValueOfCallback));
 
   v8::Local<v8::ObjectTemplate> instance = constructor->InstanceTemplate();
   instance->SetInternalFieldCount(1);
@@ -472,7 +412,7 @@ v8::Local<v8::Value> j2::FromJuliaType(v8::Isolate *isolate,
   handler.enumerator = ImportEnumerator;
   instance->SetHandler(handler);
 
-  return constructor->GetFunction();
+  return constructor;
 }
 
 void ModuleGet(v8::Local<v8::Name> name,
@@ -568,105 +508,73 @@ v8::Local<v8::Value> j2::FromJuliaModule(v8::Isolate *isolate,
   return module;
 }
 
-static std::map<std::string, j2::JuliaConversion> constructors;
-
-v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate,
-                                        jl_value_t *value) {
-  if (value == nullptr) {
-    return v8::Undefined(isolate);
-  }
-
+v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
+                                        bool exact) {
   if (jl_is_bool(value)) {
     return FromJuliaBool(isolate, value);
-  }
-
-  if (jl_is_int32(value)) {
-    return FromJuliaInt32(isolate, value);
   }
 
   if (jl_is_int64(value)) {
     return FromJuliaInt64(isolate, value);
   }
 
-  if (jl_is_float32(value)) {
-    return FromJuliaFloat32(isolate, value);
-  }
-
   if (jl_is_float64(value)) {
     return FromJuliaFloat64(isolate, value);
-  }
-
-  if (jl_is_nothing(value)) {
-    return FromJuliaNothing(isolate, value);
   }
 
   if (jl_is_string(value)) {
     return FromJuliaString(isolate, value);
   }
 
-  if (jl_subtype(value, reinterpret_cast<jl_value_t *>(jl_function_type),
-                 true)) {
-    return FromJuliaFunction(isolate, value);
+  if (jl_is_nothing(value)) {
+    return FromJuliaNothing(isolate, value);
   }
 
   if (jl_is_datatype(value)) {
     return FromJuliaType(isolate, value);
   }
 
-  if (jl_is_module(value)) {
-    return FromJuliaModule(isolate, value);
+  if (jl_subtype(value, reinterpret_cast<jl_value_t *>(jl_function_type), 1)) {
+    return FromJuliaFunction(isolate, value);
   }
 
-  const char *name = jl_typename_str(jl_typeof(value));
-  auto pair = constructors.find(name);
-  if (pair != constructors.end()) {
-    v8::Local<v8::FunctionTemplate> temp =
-        pair->second.constructor.Get(isolate);
-    v8::Local<v8::Function> constructor = temp->GetFunction();
+  if (!exact) {
+    if (jl_is_int32(value)) {
+      return FromJuliaInt32(isolate, value);
+    }
 
-    const JuliaConversion &conversion = pair->second;
+    if (jl_is_float32(value)) {
+      return FromJuliaFloat32(isolate, value);
+    }
 
-    v8::Local<v8::Value> inst = temp->InstanceTemplate()->NewInstance();
-    v8::Local<v8::Value> arg = conversion.FromJuliaValue(isolate, value);
-    constructor->Call(isolate->GetCurrentContext(), inst, 1, &arg);
+    if (jl_is_tuple(value)) {
+      return FromJuliaTuple(isolate, value);
+    }
 
-    return inst;
+    if (jl_is_array(value)) {
+      return FromJuliaArray(isolate, value);
+    }
+
+    if (jl_is_module(value)) {
+      return FromJuliaModule(isolate, value);
+    }
+
+    jl_value_t *type = jl_typeof(value);
+    v8::Local<v8::Object> obj = v8::Object::New(isolate);
+    for (size_t i = 0; i < jl_field_count(type); ++i) {
+      obj->Set(v8::String::NewFromUtf8(isolate,
+                                       jl_symbol_name(jl_field_name(type, i))),
+               FromJuliaValue(isolate, jl_get_nth_field(value, i), false));
+    }
+
+    return obj;
   }
 
-  return v8::Undefined(isolate);
-}
+  v8::Local<v8::FunctionTemplate> t = NewJavaScriptType(
+      isolate, reinterpret_cast<jl_datatype_t *>(jl_typeof(value)));
 
-namespace j2 {
+  v8::Local<v8::Object> inst = t->InstanceTemplate()->NewInstance();
+  inst->SetInternalField(0, v8::External::New(isolate, value));
 
-static void
-JuliaTypeConstructor(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  v8::MaybeLocal<v8::Array> names =
-      info[0].As<v8::Object>()->GetPropertyNames(isolate->GetCurrentContext());
-
-  size_t length = names.ToLocalChecked()->Length();
-  for (size_t i = 0; i < length; ++i) {
-    v8::Local<v8::Value> name =
-        names.ToLocalChecked()->Get(v8::Number::New(isolate, i));
-    info.This()->Set(name, info[0].As<v8::Object>()->Get(name));
-  }
-}
-
-} // namespace j2
-
-void j2::RegisterJuliaType(
-    v8::Local<v8::Object> exports, const char *name,
-    jl_value_t *(*FromJavaScriptValue)(v8::Isolate *, v8::Local<v8::Value>),
-    v8::Local<v8::Value> (*FromJuliaValue)(v8::Isolate *, jl_value_t *)) {
-  v8::Isolate *isolate = exports->GetIsolate();
-
-  v8::Local<v8::FunctionTemplate> tmpl =
-      v8::FunctionTemplate::New(isolate, JuliaTypeConstructor);
-  tmpl->SetClassName(v8::String::NewFromUtf8(isolate, name));
-
-  constructors[name] =
-      JuliaConversion{v8::UniquePersistent<v8::FunctionTemplate>(isolate, tmpl),
-                      FromJavaScriptValue, FromJuliaValue};
-  exports->Set(v8::String::NewFromUtf8(isolate, name), tmpl->GetFunction());
+  return inst;
 }
