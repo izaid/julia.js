@@ -1,2 +1,3 @@
-language: javascript
- 
+language: node_js
+julia:
+  - 0.5
