@@ -51,10 +51,7 @@ void Init(v8::Local<v8::Object> exports) {
                import_template->NewInstance(isolate->GetCurrentContext())
                    .ToLocalChecked());
 
-  jl_init_with_image(
-      "/Applications/Julia-0.5.app/Contents/Resources/julia/lib/julia",
-      "/Applications/Julia-0.5.app/Contents/Resources/julia/lib/julia/"
-      "sys.dylib");
+  jl_init_with_image(nullptr, JULIA_INIT_DIR "/julia/sys.dylib");
 }
 
 NODE_MODULE(julia, Init)

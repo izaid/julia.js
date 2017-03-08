@@ -32,14 +32,6 @@ v8::Local<v8::Object> NewTypedArray(v8::Isolate *isolate, const char *name,
   return constructor->NewInstance(3, args);
 }
 
-static void
-ArrayDescriptorConstructor(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  info.This()->Set(v8::String::NewFromUtf8(isolate, "dims"), info[0]);
-  info.This()->Set(v8::String::NewFromUtf8(isolate, "data"), info[1]);
-}
-
 static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
                                                 jl_value_t *value) {
 
