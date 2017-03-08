@@ -102,6 +102,7 @@ void j2::Inject(v8::Local<v8::Object> exports) {
                convert->GetFunction());
 
   RegisterJuliaType(exports, "Array", nullptr, FromJuliaArray);
+  RegisterJuliaType(exports, "Complex", nullptr, FromJuliaComplex);
   RegisterJuliaType(exports, "Tuple", nullptr, FromJuliaTuple);
 }
 
@@ -253,6 +254,45 @@ jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
 v8::Local<v8::Value> j2::FromJuliaBool(v8::Isolate *isolate,
                                        jl_value_t *value) {
   return v8::Boolean::New(isolate, jl_unbox_bool(value));
+}
+
+v8::Local<v8::Value> j2::FromJuliaComplex64(v8::Isolate *isolate,
+                                            jl_value_t *value) {
+  v8::Local<v8::Object> res = v8::Object::New(isolate);
+  res->Set(
+      v8::String::NewFromUtf8(isolate, "re"),
+      v8::Number::New(isolate, jl_unbox_float32(jl_get_field(value, "re"))));
+  res->Set(
+      v8::String::NewFromUtf8(isolate, "im"),
+      v8::Number::New(isolate, jl_unbox_float32(jl_get_field(value, "im"))));
+
+  return res;
+}
+
+v8::Local<v8::Value> j2::FromJuliaComplex128(v8::Isolate *isolate,
+                                             jl_value_t *value) {
+  v8::Local<v8::Object> res = v8::Object::New(isolate);
+  res->Set(
+      v8::String::NewFromUtf8(isolate, "re"),
+      v8::Number::New(isolate, jl_unbox_float64(jl_get_field(value, "re"))));
+  res->Set(
+      v8::String::NewFromUtf8(isolate, "im"),
+      v8::Number::New(isolate, jl_unbox_float64(jl_get_field(value, "im"))));
+
+  return res;
+}
+
+v8::Local<v8::Value> j2::FromJuliaComplex(v8::Isolate *isolate,
+                                          jl_value_t *value) {
+  if (jl_tparam0(jl_typeof(value)) ==
+      reinterpret_cast<jl_value_t *>(jl_float32_type)) {
+    return FromJuliaComplex64(isolate, value);
+  }
+
+  if (jl_tparam0(jl_typeof(value)) ==
+      reinterpret_cast<jl_value_t *>(jl_float64_type)) {
+    return FromJuliaComplex128(isolate, value);
+  }
 }
 
 v8::Local<v8::Value> j2::FromJuliaInt32(v8::Isolate *isolate,

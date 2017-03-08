@@ -2,13 +2,6 @@ var assert = require('assert');
 
 var Julia = require('../build/Release/julia.node');
 
-//var a = new Julia.Array({dims: [10], data: null});
-//console.dir(a);
-
-//var t = new Julia.Tuple({
-//  elements: [0, 1, 2, 3, 4]
-//});
-
 describe("Convert", () => {
     it("Bool", () => {
         assert.strictEqual(true, Julia.eval("true"));
@@ -33,6 +26,14 @@ describe("Convert", () => {
     it("Float64", () => {
         assert.strictEqual(0.0, Julia.eval("0.0"));
         assert.strictEqual(0.5, Julia.eval("0.5"));
+    });
+
+    it("Complex64", () => {
+        assert.deepEqual(new Julia.Complex({re: 0.0, im: 1.0}), Julia.eval("1.0f0im"));
+    });
+
+    it("Complex128", () => {
+        assert.deepEqual(new Julia.Complex({re: 0.0, im: 1.0}), Julia.eval("1.0im"));
     });
 
     it("String", () => {
