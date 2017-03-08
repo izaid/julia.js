@@ -152,7 +152,7 @@ jl_value_t *j2::FromJavaScriptJuliaConvert(v8::Isolate *isolate,
                                            v8::Local<v8::Value> value) {
   // ...
 
-  return jl_nothing;
+  return jl_box_float64(6.0);
 }
 
 jl_value_t *j2::FromJavaScriptJuliaArrayDescriptor(v8::Isolate *isolate,
