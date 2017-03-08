@@ -150,9 +150,12 @@ jl_value_t *UnboxJuliaArrayType(v8::Isolate *isolate,
 
 jl_value_t *j2::FromJavaScriptJuliaConvert(v8::Isolate *isolate,
                                            v8::Local<v8::Value> value) {
-  // ...
+  v8::Local<v8::Value> name =
+      value.As<v8::Object>()->Get(v8::String::NewFromUtf8(isolate, "name"));
 
-  return jl_box_float64(6.0);
+  return FromJavaScriptJuliaArrayDescriptor(
+      isolate,
+      value.As<v8::Object>()->Get(v8::String::NewFromUtf8(isolate, "value")));
 }
 
 jl_value_t *j2::FromJavaScriptJuliaArrayDescriptor(v8::Isolate *isolate,
