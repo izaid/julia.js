@@ -148,12 +148,17 @@ jl_value_t *UnboxJuliaArrayType(v8::Isolate *isolate,
   return res;
 }
 
+static std::map<const char *, from_javascript_t> conversions{
+    {"Array", j2::FromJavaScriptJuliaArrayDescriptor}};
+
 jl_value_t *j2::FromJavaScriptJuliaConvert(v8::Isolate *isolate,
                                            v8::Local<v8::Value> value) {
-  v8::Local<v8::Value> name =
-      value.As<v8::Object>()->Get(v8::String::NewFromUtf8(isolate, "name"));
+  v8::String::Utf8Value s(
+      value.As<v8::Object>()->Get(v8::String::NewFromUtf8(isolate, "name")));
 
-  return FromJavaScriptJuliaArrayDescriptor(
+  from_javascript_t func = conversions[*s];
+
+  return func(
       isolate,
       value.As<v8::Object>()->Get(v8::String::NewFromUtf8(isolate, "value")));
 }

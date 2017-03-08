@@ -2,6 +2,9 @@
 
 #include <v8.h>
 
+typedef jl_value_t *(*from_javascript_t)(v8::Isolate *isolate,
+                                         v8::Local<v8::Value> value);
+
 namespace j2 {
 
 extern v8::Persistent<v8::FunctionTemplate> array_descriptor;
