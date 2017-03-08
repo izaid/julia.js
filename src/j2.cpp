@@ -1,4 +1,5 @@
 #include <map>
+#include <string>
 
 #if __has_include(<node.h>)
 #define J2_USING_NODE
@@ -9,6 +10,19 @@
 #endif
 
 #include <j2.h>
+
+namespace j2 {
+
+static std::map<std::string, Conversion> conversions{
+    {"Array", {FromJavaScriptJuliaArrayDescriptor, FromJuliaArray}},
+    {"Tuple", {NULL, FromJuliaTuple}}};
+
+} // namespace j2
+
+v8::Local<v8::Value> j2::FromJuliaConversion(v8::Isolate *isolate,
+                                             jl_value_t *value) {
+  // ...
+}
 
 v8::Local<v8::Object> NewTypedArray(v8::Isolate *isolate, const char *name,
                                     v8::Local<v8::Value> buffer,
@@ -39,9 +53,7 @@ static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
   static std::map<jl_datatype_t *, const char *> types;
   types[jl_float32_type] = "Float32Array";
 
-  v8::Local<v8::ObjectTemplate> instance =
-      j2::array_descriptor.Get(isolate)->InstanceTemplate();
-  v8::Local<v8::Object> res = instance->NewInstance();
+  v8::Local<v8::Object> res = v8::Object::New(isolate);
 
   int32_t ndims = jl_array_ndims(value);
   v8::Local<v8::Array> dims = v8::Array::New(isolate, ndims);
@@ -73,6 +85,7 @@ static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
 }
 
 v8::Persistent<v8::FunctionTemplate> j2::array_descriptor;
+v8::Persistent<v8::FunctionTemplate> j2::conversion;
 
 static void
 ConvertConstructor(const v8::FunctionCallbackInfo<v8::Value> &info) {
@@ -100,9 +113,11 @@ void j2::Inject(v8::Local<v8::Object> exports) {
 
   v8::Local<v8::FunctionTemplate> convert =
       v8::FunctionTemplate::New(isolate, ConvertConstructor);
-  convert->SetClassName(v8::String::NewFromUtf8(isolate, "Convert"));
+  convert->SetClassName(v8::String::NewFromUtf8(isolate, "Conversion"));
 
-  exports->Set(v8::String::NewFromUtf8(exports->GetIsolate(), "Convert"),
+  conversion.Reset(isolate, convert);
+
+  exports->Set(v8::String::NewFromUtf8(exports->GetIsolate(), "Conversion"),
                convert->GetFunction());
 }
 
@@ -148,17 +163,14 @@ jl_value_t *UnboxJuliaArrayType(v8::Isolate *isolate,
   return res;
 }
 
-static std::map<const char *, from_javascript_t> conversions{
-    {"Array", j2::FromJavaScriptJuliaArrayDescriptor}};
-
 jl_value_t *j2::FromJavaScriptJuliaConvert(v8::Isolate *isolate,
                                            v8::Local<v8::Value> value) {
   v8::String::Utf8Value s(
       value.As<v8::Object>()->Get(v8::String::NewFromUtf8(isolate, "name")));
 
-  from_javascript_t func = conversions[*s];
+  Conversion pair = conversions[*s];
 
-  return func(
+  return pair.FromJavaScriptValue(
       isolate,
       value.As<v8::Object>()->Get(v8::String::NewFromUtf8(isolate, "value")));
 }
@@ -223,7 +235,7 @@ jl_value_t *j2::FromJavaScriptObject(v8::Isolate *isolate,
   }
 
   if (value.As<v8::Object>()->GetConstructorName()->Equals(
-          v8::String::NewFromUtf8(isolate, "Convert"))) {
+          v8::String::NewFromUtf8(isolate, "Conversion"))) {
     printf("Convert success\n");
     return FromJavaScriptJuliaConvert(isolate, value);
   }
@@ -293,6 +305,18 @@ v8::Local<v8::Value> j2::FromJuliaNothing(v8::Isolate *isolate,
 v8::Local<v8::Value> j2::FromJuliaString(v8::Isolate *isolate,
                                          jl_value_t *value) {
   return v8::String::NewFromUtf8(isolate, jl_string_data(value));
+}
+
+v8::Local<v8::Value> j2::FromJuliaTuple(v8::Isolate *isolate,
+                                        jl_value_t *value) {
+  size_t length = jl_field_count(jl_typeof(value));
+
+  v8::Local<v8::Array> res = v8::Array::New(isolate, length);
+  for (size_t i = 0; i < length; ++i) {
+    res->Set(i, FromJuliaValue(isolate, jl_get_nth_field(value, i)));
+  }
+
+  return res;
 }
 
 v8::Local<v8::Value> j2::FromJuliaArray(v8::Isolate *isolate,
@@ -561,10 +585,6 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate,
     return FromJuliaString(isolate, value);
   }
 
-  if (jl_is_array(value)) {
-    return FromJuliaArray(isolate, value);
-  }
-
   if (jl_subtype(value, reinterpret_cast<jl_value_t *>(jl_function_type),
                  true)) {
     return FromJuliaFunction(isolate, value);
@@ -576,6 +596,23 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate,
 
   if (jl_is_module(value)) {
     return FromJuliaModule(isolate, value);
+  }
+
+  const char *name = jl_typename_str(jl_typeof(value));
+  auto pair = conversions.find(name);
+  if (pair != conversions.end()) {
+    Conversion conversion = pair->second;
+
+    v8::Local<v8::ObjectTemplate> instance =
+        j2::conversion.Get(isolate)->InstanceTemplate();
+    v8::Local<v8::Object> res = instance->NewInstance();
+
+    res->Set(v8::String::NewFromUtf8(isolate, "name"),
+             v8::String::NewFromUtf8(isolate, name));
+    res->Set(v8::String::NewFromUtf8(isolate, "value"),
+             conversion.FromJuliaValue(isolate, value));
+
+    return res;
   }
 
   return v8::Undefined(isolate);

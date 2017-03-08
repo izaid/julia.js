@@ -38,14 +38,24 @@ describe("Convert", () => {
     });
 
     it("Tuple", () => {
-        // ...
+        assert.deepEqual(new Julia.Conversion('Tuple', []), Julia.eval("()"));
+
+        assert.deepEqual(new Julia.Conversion('Tuple', ["Hello, world!"]), Julia.eval("(\"Hello, world!\",)"));
+
+        assert.deepEqual(new Julia.Conversion('Tuple', [0, 1, 2, 3, 4]), Julia.eval("(0, 1, 2, 3, 4)"));
     });
 
     it("Array", () => {
-        assert.deepEqual(new Julia.ArrayDescriptor([5], new Float32Array([0, 1, 2, 3, 4])), Julia.eval("[0.0f0, 1.0f0, 2.0f0, 3.0f0, 4.0f0]"));
-        assert.deepEqual(new Julia.ArrayDescriptor([
-            2, 2
-        ], new Float32Array([0, 1, 2, 3])), Julia.eval("[[0.0f0, 1.0f0] [2.0f0, 3.0f0]]"));
+        assert.deepEqual(new Julia.Conversion('Array', {
+            dims: [5],
+            data: new Float32Array([0, 1, 2, 3, 4])
+        }), Julia.eval("[0.0f0, 1.0f0, 2.0f0, 3.0f0, 4.0f0]"));
+        assert.deepEqual(new Julia.Conversion('Array', {
+            dims: [
+                2, 2
+            ],
+            data: new Float32Array([0, 1, 2, 3])
+        }), Julia.eval("[[0.0f0, 1.0f0] [2.0f0, 3.0f0]]"));
 
         //        for (var i = 0; i < 2500; ++i) {
         //          var a = julia.eval("zeros(Float32, 512 * 512)");
