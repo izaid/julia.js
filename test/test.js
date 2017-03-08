@@ -2,6 +2,13 @@ var assert = require('assert');
 
 var Julia = require('../build/Release/julia.node');
 
+//var a = new Julia.Array({dims: [10], data: null});
+//console.dir(a);
+
+//var t = new Julia.Tuple({
+//  elements: [0, 1, 2, 3, 4]
+//});
+
 describe("Convert", () => {
     it("Bool", () => {
         assert.strictEqual(true, Julia.eval("true"));
@@ -38,19 +45,19 @@ describe("Convert", () => {
     });
 
     it("Tuple", () => {
-        assert.deepEqual(new Julia.Conversion('Tuple', []), Julia.eval("()"));
+        assert.deepEqual(new Julia.Tuple([]), Julia.eval("()"));
 
-        assert.deepEqual(new Julia.Conversion('Tuple', ["Hello, world!"]), Julia.eval("(\"Hello, world!\",)"));
+        assert.deepEqual(new Julia.Tuple(["Hello, world!"]), Julia.eval("(\"Hello, world!\",)"));
 
-        assert.deepEqual(new Julia.Conversion('Tuple', [0, 1, 2, 3, 4]), Julia.eval("(0, 1, 2, 3, 4)"));
+        assert.deepEqual(new Julia.Tuple([0, 1, 2, 3, 4]), Julia.eval("(0, 1, 2, 3, 4)"));
     });
 
     it("Array", () => {
-        assert.deepEqual(new Julia.Conversion('Array', {
+        assert.deepEqual(new Julia.Array({
             dims: [5],
             data: new Float32Array([0, 1, 2, 3, 4])
         }), Julia.eval("[0.0f0, 1.0f0, 2.0f0, 3.0f0, 4.0f0]"));
-        assert.deepEqual(new Julia.Conversion('Array', {
+        assert.deepEqual(new Julia.Array({
             dims: [
                 2, 2
             ],
