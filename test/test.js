@@ -2,9 +2,6 @@ var assert = require('assert');
 
 var Julia = require('../build/Release/julia.node');
 
-// everything returns Julia objects, but give them valueOf?
-// except for primitives for which there is an exact mapping
-
 describe("Convert", () => {
     it("Bool", () => {
         assert.strictEqual(true, Julia.eval("true"));
@@ -109,16 +106,23 @@ describe("Convert", () => {
 
     it("Type", () => {
         assert.strictEqual(Boolean, Julia.eval("Bool"));
+        assert.strictEqual(Number, Julia.eval("Float64"));
 
         let Foo = Julia.eval(`type Foo
-           qux::Bool
-           count::Int32
-       end; function (self::Foo)(x) 12 + x + self.count end; Foo`);
+                                  qux::Bool
+                                  count::Int32
+                              end;
+                              function (self::Foo)(x) 12 + x + self.count end;
+                              Foo`);
         console.log(Foo)
 
         var val = new Foo(true, 1);
         console.log(val.valueOf());
         assert(val instanceof Foo);
+        assert.deepStrictEqual({
+            qux: true,
+            count: 1
+        }, val.valueOf());
         assert.deepEqual([
             "qux", "count"
         ], Object.keys(val));

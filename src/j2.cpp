@@ -379,6 +379,11 @@ v8::Local<v8::Value> j2::FromJuliaType(v8::Isolate *isolate,
         v8::String::NewFromUtf8(isolate, "Boolean"));
   }
 
+  if (reinterpret_cast<jl_datatype_t *>(value) == jl_float64_type) {
+    return isolate->GetCurrentContext()->Global()->Get(
+        v8::String::NewFromUtf8(isolate, "Number"));
+  }
+
   return NewJavaScriptType(isolate, reinterpret_cast<jl_datatype_t *>(value))
       ->GetFunction();
 }
