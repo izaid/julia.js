@@ -32,6 +32,27 @@ v8::Local<v8::Object> NewTypedArray(v8::Isolate *isolate, const char *name,
   return constructor->NewInstance(3, args);
 }
 
+int j2::TranslateJuliaException(v8::Isolate *isolate) {
+  jl_value_t *exception = jl_exception_occurred();
+  if (exception != NULL) {
+    printf("GOT ERROR\n");
+
+    JL_GC_PUSH1(&exception);
+
+    const char *message = jl_typeof_str(exception);
+    jl_value_t *message2 = jl_get_field(exception, "msg");
+
+    isolate->ThrowException(v8::Exception::Error(
+        v8::String::NewFromUtf8(isolate, jl_string_data(message2))));
+
+    JL_GC_POP();
+
+    return 1;
+  }
+
+  return 0;
+}
+
 static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
                                                 jl_value_t *value) {
 
@@ -202,6 +223,39 @@ jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
   }
 
   return jl_nothing;
+}
+
+jl_value_t *j2::FromJavaScriptValue2(v8::Isolate *isolate,
+                                     v8::Local<v8::Value> value) {
+
+  //  v8::Local<v8::FunctionTemplate> t = NewJavaScriptType(
+  //    isolate, reinterpret_cast<jl_datatype_t *>(jl_typeof(value)));
+
+  //  v8::Local<v8::Object> inst = t->InstanceTemplate()->NewInstance();
+  // inst->SetInternalField(0, v8::External::New(isolate, value));
+
+  //  return inst;
+
+  if (value->IsNumber()) {
+    return FromJavaScriptNumber(value);
+  }
+
+  if (value->IsString()) {
+    return FromJavaScriptString(value);
+  }
+
+  if (value->IsNull()) {
+    return FromJavaScriptNull(value);
+  }
+
+  jl_value_t *func = jl_eval_string("JavaScriptValue");
+  jl_value_t *v = jl_new_struct((jl_datatype_t *)func);
+  TranslateJuliaException(isolate);
+
+  jl_set_nth_field(
+      v, 0, jl_box_voidpointer(new v8::Persistent<v8::Value>(isolate, value)));
+
+  return v;
 }
 
 v8::Local<v8::Value> j2::FromJuliaBool(v8::Isolate *isolate,
@@ -533,6 +587,14 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
 
   if (jl_subtype(value, reinterpret_cast<jl_value_t *>(jl_function_type), 1)) {
     return FromJuliaFunction(isolate, value);
+  }
+
+  jl_value_t *datatype = jl_eval_string("JavaScriptValue");
+  if (jl_subtype(value, datatype, 1)) {
+    v8::Persistent<v8::Value> *val =
+        (v8::Persistent<v8::Value> *)jl_unbox_voidpointer(
+            jl_get_nth_field(value, 0));
+    return val->Get(isolate);
   }
 
   if (!exact) {

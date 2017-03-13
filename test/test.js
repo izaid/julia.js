@@ -136,4 +136,26 @@ describe("Convert", () => {
         let module = Julia.$.Test;
         console.dir(module);
     });
+
+    it("JavaScriptNull", () => {
+        assert.strictEqual(null, Julia.eval("js\"null\""));
+    });
+
+    it("JavaScriptNumber", () => {
+        assert.strictEqual(2, Julia.eval("js\"2\""));
+    });
+
+//    it("JavaScriptString", () => {
+//      assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello, world!\"\""));
+  //  });
+
+    it("JavaScriptValue", () => {
+        assert.deepEqual({
+            x: 1,
+            y: 2
+        }, Julia.eval("js\"var z = {x: 1, y: 2}; z\""));
+
+        var res = Julia.eval("convert(Any, js\"var z = {x: 1, y: 2}; z\")");
+        console.log(res);
+    });
 });

@@ -17,6 +17,18 @@ void Eval(const v8::FunctionCallbackInfo<v8::Value> &info) {
   res.Set(j2::FromJuliaValue(isolate, value, true));
 }
 
+extern "C" jl_value_t *JSEval(const char *src) {
+  v8::Isolate *isolate = v8::Isolate::GetCurrent();
+
+  v8::Local<v8::Script> script =
+      v8::Script::Compile(isolate->GetCurrentContext(),
+                          v8::String::NewFromUtf8(isolate, src))
+          .ToLocalChecked();
+
+  return j2::FromJavaScriptValue2(
+      isolate, script->Run(isolate->GetCurrentContext()).ToLocalChecked());
+}
+
 #include <sstream>
 
 void Import(v8::Local<v8::Name> name,
@@ -35,6 +47,8 @@ void Import(v8::Local<v8::Name> name,
   }
 }
 
+extern "C" void callback() { printf("in callback"); }
+
 void Init(v8::Local<v8::Object> exports) {
   v8::Isolate *isolate = exports->GetIsolate();
 
@@ -51,7 +65,13 @@ void Init(v8::Local<v8::Object> exports) {
                import_template->NewInstance(isolate->GetCurrentContext())
                    .ToLocalChecked());
 
-  jl_init_with_image(nullptr, JULIA_INIT_DIR "/julia/sys.dylib");
+  jl_init_with_image(JULIA_INIT_DIR, JULIA_INIT_DIR "/julia/sys.dylib");
+
+  char *test =
+#include "bulk.jl"
+      ;
+  jl_eval_string(test);
+  j2::TranslateJuliaException(isolate);
 }
 
 NODE_MODULE(julia, Init)

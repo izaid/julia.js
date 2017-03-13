@@ -4,6 +4,8 @@
 
 namespace j2 {
 
+int TranslateJuliaException(v8::Isolate *isolate);
+
 v8::Local<v8::Value> FromJuliaArray(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaBool(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaInt32(v8::Isolate *isolate, jl_value_t *value);
@@ -36,5 +38,8 @@ jl_value_t *FromJavaScriptObject(v8::Isolate *isolate,
                                  v8::Local<v8::Value> value);
 jl_value_t *FromJavaScriptValue(v8::Isolate *isolate,
                                 v8::Local<v8::Value> value);
+
+jl_value_t *FromJavaScriptValue2(v8::Isolate *isolate,
+                                 v8::Local<v8::Value> value);
 
 } // namespace j2
