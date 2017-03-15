@@ -17,3 +17,6 @@ before_install:
   - export PATH="${PATH}:${HOME}/julia/bin"
   - julia -e 'versioninfo()'
   - npm link
+  - pwd
+  - ls
+  - ls node_modules
