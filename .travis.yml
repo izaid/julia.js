@@ -6,6 +6,8 @@ sudo: false
 
 
 language: node_js
+node_js:
+  - "6"
 cache:
   apt: true
 before_install:
