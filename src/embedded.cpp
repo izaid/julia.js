@@ -47,7 +47,7 @@ extern "C" jl_value_t *JSEval(const char *src) {
       isolate, script->Run(isolate->GetCurrentContext()).ToLocalChecked());
 }
 
-// julia -e "println(joinpath(dirname(JULIA_HOME), \"share\", \"julia\", \"julia-config.jl\"))"
+// julia -e "println(joinpath(dirname(JULIA_HOME), \"share\", \"julia\", \"julia-config.jl\"))" for OS X
 
 void Init(v8::Local<v8::Object> exports) {
   v8::Isolate *isolate = exports->GetIsolate();
