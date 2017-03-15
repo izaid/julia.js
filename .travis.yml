@@ -8,4 +8,4 @@ language: node_js
 before_install:
   - sudo add-apt-repository ppa:staticfloat/juliareleases
   - sudo apt-get -qq update
-  - sudo apt-get install -yy julia
+  - sudo apt-get -qq install julia
