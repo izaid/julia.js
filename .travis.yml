@@ -1,5 +1,5 @@
-sudo: required
-dist: false
+dist: trusty
+sudo: false
 
 language: node_js
 before_install:
