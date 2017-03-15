@@ -1,6 +1,6 @@
 var assert = require('assert');
 
-var Julia = require('../build/Release/julia.node');
+var Julia = require('../node_modules/julia.js/julia');
 
 describe("Convert", () => {
     it("Bool", () => {
@@ -133,8 +133,19 @@ describe("Convert", () => {
     });
 
     it("Module", () => {
-        let module = Julia.$.Test;
-        console.dir(module);
+        let Test = Julia.eval("Test");
+        assert.deepEqual([
+            "@inferred",
+            "@test",
+            "@test_approx_eq",
+            "@test_approx_eq_eps",
+            "@test_broken",
+            "@test_skip",
+            "@test_throws",
+            "@testset",
+            "GenericString",
+            "detect_ambiguities"
+        ], Object.keys(Test).sort());
     });
 
     it("JavaScriptNull", () => {
@@ -145,9 +156,9 @@ describe("Convert", () => {
         assert.strictEqual(2, Julia.eval("js\"2\""));
     });
 
-//    it("JavaScriptString", () => {
-//      assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello, world!\"\""));
-  //  });
+    //    it("JavaScriptString", () => {
+    //      assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello, world!\"\""));
+    //  });
 
     it("JavaScriptValue", () => {
         assert.deepEqual({

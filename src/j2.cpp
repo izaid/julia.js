@@ -35,8 +35,6 @@ v8::Local<v8::Object> NewTypedArray(v8::Isolate *isolate, const char *name,
 int j2::TranslateJuliaException(v8::Isolate *isolate) {
   jl_value_t *exception = jl_exception_occurred();
   if (exception != NULL) {
-    printf("GOT ERROR\n");
-
     JL_GC_PUSH1(&exception);
 
     const char *message = jl_typeof_str(exception);
@@ -377,7 +375,6 @@ void JuliaConstruct(const v8::FunctionCallbackInfo<v8::Value> &info) {
 
 void ImportGet(v8::Local<v8::Name> name,
                const v8::PropertyCallbackInfo<v8::Value> &info) {
-  printf("getting...\n");
   v8::Isolate *isolate = info.GetIsolate();
 
   v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
@@ -395,7 +392,6 @@ void ImportGet(v8::Local<v8::Name> name,
 }
 
 void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
-  printf("enumerating...\n");
   v8::Isolate *isolate = info.GetIsolate();
 
   v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
@@ -466,31 +462,7 @@ v8::Local<v8::FunctionTemplate> j2::NewJavaScriptType(v8::Isolate *isolate,
   return constructor;
 }
 
-void ModuleGet(v8::Local<v8::Name> name,
-               const v8::PropertyCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
-  jl_value_t *module =
-      static_cast<jl_value_t *>(wrapper.As<v8::External>()->Value());
-
-  v8::String::Utf8Value s(name);
-  if (s.length() != 0) {
-    //    JL_GC_PUSH1(&module);
-
-    jl_value_t *value = jl_get_global((jl_module_t *)module, jl_symbol(*s));
-    if (value != nullptr) {
-      //    JL_GC_PUSH1(&value);
-
-      v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-      res.Set(j2::FromJuliaValue(isolate, value));
-
-      //      JL_GC_POP();
-    }
-
-    //    JL_GC_POP();
-  }
-}
+namespace {
 
 JL_DLLEXPORT jl_value_t *jl_module_names(jl_module_t *m, int all,
                                          int imported) {
@@ -516,6 +488,32 @@ JL_DLLEXPORT jl_value_t *jl_module_names(jl_module_t *m, int all,
   return (jl_value_t *)a;
 }
 
+void ModuleGetter(v8::Local<v8::Name> name,
+                  const v8::PropertyCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
+  jl_value_t *module =
+      static_cast<jl_value_t *>(wrapper.As<v8::External>()->Value());
+
+  v8::String::Utf8Value s(name);
+  if (s.length() != 0) {
+    //    JL_GC_PUSH1(&module);
+
+    jl_value_t *value = jl_get_global((jl_module_t *)module, jl_symbol(*s));
+    if (value != nullptr) {
+      //    JL_GC_PUSH1(&value);
+
+      v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+      res.Set(j2::FromJuliaValue(isolate, value));
+
+      //      JL_GC_POP();
+    }
+
+    //    JL_GC_POP();
+  }
+}
+
 void ModuleEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
@@ -527,11 +525,11 @@ void ModuleEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
       (jl_array_t *)jl_module_names((jl_module_t *)module, 0, 0);
   size_t length = jl_array_len(names);
 
-  v8::Local<v8::Array> properties = v8::Array::New(info.GetIsolate(), length);
+  v8::Local<v8::Array> properties = v8::Array::New(isolate, length);
   for (size_t i = 0; i < length; ++i) {
     jl_value_t *v = jl_array_ptr_ref(names, i);
     if (jl_symbol_name(reinterpret_cast<jl_sym_t *>(v)) !=
-        jl_symbol_name(((jl_module_t *)module)->name)) {
+        jl_symbol_name(reinterpret_cast<jl_module_t *>(module)->name)) {
       properties->Set(
           v8::Number::New(isolate, i),
           v8::String::NewFromUtf8(
@@ -542,13 +540,15 @@ void ModuleEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
   info.GetReturnValue().Set(properties);
 }
 
+} // unnamed namespace
+
 v8::Local<v8::Value> j2::FromJuliaModule(v8::Isolate *isolate,
                                          jl_value_t *value) {
   v8::Local<v8::ObjectTemplate> instance = v8::ObjectTemplate::New(isolate);
   instance->SetInternalFieldCount(1);
 
   v8::NamedPropertyHandlerConfiguration handler;
-  handler.getter = ModuleGet;
+  handler.getter = ModuleGetter;
   handler.enumerator = ModuleEnumerator;
   instance->SetHandler(handler);
 
@@ -589,6 +589,10 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
     return FromJuliaFunction(isolate, value);
   }
 
+  if (jl_is_module(value)) {
+    return FromJuliaModule(isolate, value);
+  }
+
   jl_value_t *datatype = jl_eval_string("JavaScriptValue");
   if (jl_subtype(value, datatype, 1)) {
     v8::Persistent<v8::Value> *val =
@@ -612,10 +616,6 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
 
     if (jl_is_array(value)) {
       return FromJuliaArray(isolate, value);
-    }
-
-    if (jl_is_module(value)) {
-      return FromJuliaModule(isolate, value);
     }
 
     jl_value_t *type = jl_typeof(value);
