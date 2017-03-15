@@ -1,3 +1,5 @@
-language: node_js
+language: julia
 julia:
-  - 0.5
+  - release
+#julia:
+#  - 0.5
