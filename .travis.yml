@@ -4,10 +4,12 @@ sudo: required
 # Base.DATAROOTDIR
 # julia -e 'print(joinpath(JULIA_HOME,Base.DATAROOTDIR,"julia"))'
 
-language: node_js
+
+# language: node_js
+language: julia
 cache:
   apt: true
-before_install:
-  - sudo add-apt-repository ppa:staticfloat/juliareleases -y
-  - sudo apt-get -qq update
-  - sudo apt-get install julia
+#before_install:
+#  - sudo add-apt-repository ppa:staticfloat/juliareleases -y
+#  - sudo apt-get -qq update
+#  - sudo apt-get install julia
