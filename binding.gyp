@@ -7,6 +7,7 @@
       "include_dirs": ["include"],
         'libraries': ['<!@(<(julia_config) --ldlibs)'],
     'cflags': ['<!@(<(julia_config) --cflags)'],
+    'ldflags': ['<!@(<(julia_config) --ldflags)'],
       "xcode_settings": {
             'OTHER_CFLAGS': [ '<!@(<(julia_config) --cflags)'],
 'OTHER_LDFLAGS': ['<!@(<(julia_config) --ldflags)'],
