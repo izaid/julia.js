@@ -18,6 +18,8 @@ addons:
 cache:
   apt: true
 before_install:
+  - export CC="gcc-4.9"
+  - export CXX="g++-4.9"
   - cc --version
   - CURL_USER_AGENT="Travis-CI $(curl --version | head -n 1)"
   - mkdir -p ~/julia
