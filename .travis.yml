@@ -6,6 +6,6 @@ sudo: required
 
 language: node_js
 before_install:
-  - sudo add-apt-repository ppa:staticfloat/juliareleases
+  - sudo add-apt-repository ppa:staticfloat/juliareleases -y
   - sudo apt-get -qq update
-  - sudo apt-get -qq install julia
+  - sudo apt-get install julia
