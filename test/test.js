@@ -1,6 +1,6 @@
 var assert = require('assert');
 
-var Julia = require('julia.js/julia');
+var Julia = require('../julia');
 
 describe("Convert", () => {
     it("Bool", () => {
