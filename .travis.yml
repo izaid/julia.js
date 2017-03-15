@@ -6,7 +6,6 @@ sudo: false
 
 
 language: node_js
-compiler: clang
 cache:
   apt: true
 before_install:

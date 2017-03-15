@@ -6,9 +6,9 @@
       "sources": [ "src/j2.cpp", "src/embedded.cpp" ],
       "include_dirs": ["include"],
         'libraries': ['<!@(<(julia_config) --ldlibs)'],
-    'cflags': ['-std=c++14'],
+    'cflags': [],
       "xcode_settings": {
-            'OTHER_CFLAGS': ['-std=c++14', '<!@(<(julia_config) --cflags)'],
+            'OTHER_CFLAGS': [ '<!@(<(julia_config) --cflags)'],
 'OTHER_LDFLAGS': ['<!@(<(julia_config) --ldflags)'],
       }
     },
