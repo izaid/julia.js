@@ -20,7 +20,6 @@ cache:
 before_install:
   - export CC="gcc-4.9"
   - export CXX="g++-4.9"
-  - export LD_PRELOAD=libjulia.so
   - cc --version
   - CURL_USER_AGENT="Travis-CI $(curl --version | head -n 1)"
   - mkdir -p ~/julia
@@ -29,3 +28,4 @@ before_install:
   - curl -A "$CURL_USER_AGENT" -s -L --retry 7 'https://julialang.s3.amazonaws.com/bin/linux/x64/0.5/julia-0.5.1-linux-x86_64.tar.gz' | tar -C ~/julia -x -z --strip-components=1 -f -
   - export PATH="${PATH}:${HOME}/julia/bin"
   - julia -e 'versioninfo()'
+  - export LD_PRELOAD=libjulia.so
