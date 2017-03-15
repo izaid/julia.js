@@ -5,4 +5,4 @@ language: node_js
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y julia
-  - find / -name julia-config.jl
+  - sudo find / -name julia-config.jl
