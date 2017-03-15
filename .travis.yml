@@ -15,3 +15,4 @@ before_install:
   - export PATH="${PATH}:${HOME}/julia/bin"
   - julia -e 'versioninfo()'
   - julia -e "println(joinpath(dirname(JULIA_HOME), \"share\", \"julia\", \"julia-config.jl\"))"
+  - /home/travis/julia/share/julia/julia-config.jl
