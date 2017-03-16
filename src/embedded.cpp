@@ -60,8 +60,10 @@ void Init(v8::Local<v8::Object> exports) {
 
   FILE *f = fopen("js.jl", "rb");
   if (f == NULL) {
+    printf("FILE NOT FOUND\n");
     isolate->ThrowException(v8::Exception::Error(
         v8::String::NewFromUtf8(isolate, "could not open \"js.jl\"")));
+    return;
   }
 
   fseek(f, 0, SEEK_END);
