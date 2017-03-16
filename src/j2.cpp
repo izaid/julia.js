@@ -1,5 +1,6 @@
 #include <map>
 #include <string>
+#include <unordered_map>
 
 #include <node.h>
 #include <node_buffer.h>
@@ -44,41 +45,6 @@ int j2::TranslateJuliaException(v8::Isolate *isolate) {
   }
 
   return 0;
-}
-
-static v8::Local<v8::Object> NewArrayDescriptor(v8::Isolate *isolate,
-                                                jl_value_t *value) {
-
-  static std::map<jl_datatype_t *, const char *> types;
-  types[jl_float32_type] = "Float32Array";
-
-  v8::Local<v8::Object> res = v8::Object::New(isolate);
-
-  int32_t ndims = jl_array_ndims(value);
-  v8::Local<v8::Array> dims = v8::Array::New(isolate, ndims);
-  for (int32_t i = 0; i < ndims; ++i) {
-    dims->Set(i, v8::Number::New(isolate, jl_array_size(value, i)));
-  }
-  res->Set(v8::String::NewFromUtf8(isolate, "dims"), dims);
-
-  v8::Local<v8::Object> buffer =
-      node::Buffer::New(isolate, static_cast<char *>(jl_array_data(value)),
-                        jl_array_len(value) *
-                            reinterpret_cast<jl_array_t *>(value)->elsize,
-                        [](char *d, void *value) {
-                          // ...
-                          //                          printf("DEALLOCATING\n");
-                        },
-                        value)
-          .ToLocalChecked();
-  res->Set(
-      v8::String::NewFromUtf8(isolate, "data"),
-      NewTypedArray(isolate,
-                    types[static_cast<jl_datatype_t *>(jl_array_eltype(value))],
-                    buffer->Get(v8::String::NewFromUtf8(isolate, "buffer")), 0,
-                    jl_array_len(value)));
-
-  return res;
 }
 
 jl_value_t *j2::FromJavaScriptArray(v8::Local<v8::Value> value) {
@@ -271,7 +237,39 @@ v8::Local<v8::Value> j2::FromJuliaTuple(v8::Isolate *isolate,
 
 v8::Local<v8::Value> j2::FromJuliaArray(v8::Isolate *isolate,
                                         jl_value_t *value) {
-  return NewArrayDescriptor(isolate, value);
+  static const std::unordered_map<jl_datatype_t *, const char *> types{
+      {jl_uint8_type, "Uint8Array"},
+      {jl_uint16_type, "Uint16Array"},
+      {jl_float32_type, "Float32Array"},
+      {jl_float64_type, "Float64Array"}};
+
+  v8::Local<v8::Object> res = v8::Object::New(isolate);
+
+  int32_t ndims = jl_array_ndims(value);
+  v8::Local<v8::Array> dims = v8::Array::New(isolate, ndims);
+  for (int32_t i = 0; i < ndims; ++i) {
+    dims->Set(i, v8::Number::New(isolate, jl_array_size(value, i)));
+  }
+  res->Set(v8::String::NewFromUtf8(isolate, "dims"), dims);
+
+  v8::Local<v8::Object> buffer =
+      node::Buffer::New(isolate, static_cast<char *>(jl_array_data(value)),
+                        jl_array_len(value) *
+                            reinterpret_cast<jl_array_t *>(value)->elsize,
+                        [](char *d, void *value) {
+                          // ...
+                          //                          printf("DEALLOCATING\n");
+                        },
+                        value)
+          .ToLocalChecked();
+  res->Set(v8::String::NewFromUtf8(isolate, "data"),
+           NewTypedArray(
+               isolate,
+               types.at(static_cast<jl_datatype_t *>(jl_array_eltype(value))),
+               buffer->Get(v8::String::NewFromUtf8(isolate, "buffer")), 0,
+               jl_array_len(value)));
+
+  return res;
 }
 
 void JuliaCall(const v8::FunctionCallbackInfo<v8::Value> &info) {
@@ -615,6 +613,12 @@ v8::Local<v8::Value> UnboxJavaScriptValue(v8::Isolate *isolate,
 }
 
 jl_value_t *ToJuliaArray(jl_value_t *jl_value) {
+  static const std::unordered_map<std::string, jl_datatype_t *> jl_eltypes{
+      {"Uint8Array", jl_uint8_type},
+      {"Uint16Array", jl_uint16_type},
+      {"Float32Array", jl_float32_type},
+      {"Float64Array", jl_float64_type}};
+
   v8::Isolate *isolate = v8::Isolate::GetCurrent();
 
   v8::Local<v8::Value> js_value = UnboxJavaScriptValue(isolate, jl_value);
@@ -626,6 +630,10 @@ jl_value_t *ToJuliaArray(jl_value_t *jl_value) {
       js_data.As<v8::Object>()
           ->Get(v8::String::NewFromUtf8(isolate, "buffer"))
           .As<v8::ArrayBuffer>();
+
+  v8::Local<v8::String> js_name =
+      js_data.As<v8::Object>()->GetConstructorName();
+  v8::String::Utf8Value s(js_name);
 
   uint32_t ndims = js_dims.As<v8::Array>()
                        ->Get(v8::String::NewFromUtf8(isolate, "length"))
@@ -640,7 +648,7 @@ jl_value_t *ToJuliaArray(jl_value_t *jl_value) {
   jl_value_t *jl_dims = jl_new_bits(jl_type, dims.data());
 
   jl_array_t *res =
-      jl_ptr_to_array(jl_apply_array_type(jl_float32_type, ndims),
+      jl_ptr_to_array(jl_apply_array_type(jl_eltypes.at(*s), ndims),
                       js_buffer->GetContents().Data(), jl_dims, 0);
 
   return (jl_value_t *)res;
