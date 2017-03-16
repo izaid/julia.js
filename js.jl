@@ -4,6 +4,7 @@ end
 
 macro NODE_FILE()
     path = joinpath(dirname(@__FILE__), "julia.node")
+    println(path)
     return :($path)
 end
 
