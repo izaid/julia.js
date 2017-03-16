@@ -44,5 +44,8 @@ jl_value_t *FromJavaScriptValue2(v8::Isolate *isolate,
 
 } // namespace j2
 
+extern "C" jl_value_t *UnboxJuliaValue(v8::Isolate *isolate,
+                                       v8::Local<v8::Value> value);
+
 // From a JavaScriptValue to a more specific Julia type
 extern "C" jl_value_t *ToJuliaArray(jl_value_t *value);

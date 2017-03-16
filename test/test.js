@@ -158,6 +158,7 @@ describe("Convert", () => {
 
     it("JavaScriptArray", () => {
         var convertArray = Julia.eval("(value) -> convert(Array, value)");
+        var size = Julia.eval("size");
 
         assert.deepEqual({
             dims: [5],
@@ -166,6 +167,24 @@ describe("Convert", () => {
             dims: [5],
             data: new Float32Array([0, 1, 2, 3, 4])
         }).valueOf());
+
+        var res = convertArray({
+            dims: [5],
+            data: new Float32Array([0, 1, 2, 3, 4])
+        });
+        var res2 = size(res);
+
+        console.dir(res2.valueOf());
+
+        /*
+        assert.deepEqual({
+            dims: [5],
+            data: new Float32Array([0, 1, 2, 3, 4])
+        }, convertArray(convertArray({
+            dims: [5],
+            data: new Float32Array([0, 1, 2, 3, 4])
+        })).valueOf());
+*/
 
         assert.deepEqual({
             dims: [5],

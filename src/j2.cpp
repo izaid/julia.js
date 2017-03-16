@@ -153,6 +153,14 @@ jl_value_t *j2::FromJavaScriptObject(v8::Isolate *isolate,
   return jl_nothing;
 }
 
+jl_value_t *UnboxJuliaValue(v8::Isolate *isolate,
+                            v8::Local<v8::Value> js_value) {
+  v8::Local<v8::Value> js_external =
+      js_value.As<v8::Object>()->GetInternalField(0);
+
+  return static_cast<jl_value_t *>(js_external.As<v8::External>()->Value());
+}
+
 jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
                                     v8::Local<v8::Value> value) {
   if (value->IsBoolean()) {
@@ -170,6 +178,20 @@ jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
   if (value->IsNull()) {
     return FromJavaScriptNull(value);
   }
+
+  if (value->IsObject()) {
+    v8::Local<v8::String> js_name =
+        value.As<v8::Object>()->GetConstructorName();
+    v8::String::Utf8Value s(js_name);
+
+    if (strcmp(*s, "JuliaValue") == 0) {
+      return UnboxJuliaValue(isolate, value);
+    }
+  }
+
+  // if (value->IsObject()) {
+  //    return FromJavaScriptObject(isolate, value);
+  //  }
 
   //  if (value->IsArray()) {
   //  return FromJavaScriptArray(value);
@@ -408,8 +430,7 @@ v8::Local<v8::FunctionTemplate> j2::NewJavaScriptType(v8::Isolate *isolate,
                                                       jl_datatype_t *type) {
   v8::Local<v8::FunctionTemplate> constructor = v8::FunctionTemplate::New(
       isolate, JuliaConstruct, v8::External::New(isolate, type));
-  constructor->SetClassName(
-      v8::String::NewFromUtf8(isolate, jl_symbol_name(type->name->name)));
+  constructor->SetClassName(v8::String::NewFromUtf8(isolate, "JuliaValue"));
 
   constructor->PrototypeTemplate()->Set(
       v8::String::NewFromUtf8(isolate, "valueOf"),
