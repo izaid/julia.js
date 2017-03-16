@@ -630,3 +630,44 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
 
   return inst;
 }
+
+v8::Local<v8::Value> UnboxJavaScriptValue(v8::Isolate *isolate,
+                                          jl_value_t *value) {
+  jl_value_t *ptr = jl_get_nth_field(value, 0);
+
+  v8::Persistent<v8::Value> &persistent =
+      *static_cast<v8::Persistent<v8::Value> *>(jl_unbox_voidpointer(ptr));
+  return persistent.Get(isolate);
+}
+
+jl_value_t *ToJuliaArray(jl_value_t *jl_value) {
+  v8::Isolate *isolate = v8::Isolate::GetCurrent();
+
+  v8::Local<v8::Value> js_value = UnboxJavaScriptValue(isolate, jl_value);
+  v8::Local<v8::Value> js_dims =
+      js_value.As<v8::Object>()->Get(v8::String::NewFromUtf8(isolate, "dims"));
+  v8::Local<v8::Value> js_data =
+      js_value.As<v8::Object>()->Get(v8::String::NewFromUtf8(isolate, "data"));
+  v8::Local<v8::ArrayBuffer> js_buffer =
+      js_data.As<v8::Object>()
+          ->Get(v8::String::NewFromUtf8(isolate, "buffer"))
+          .As<v8::ArrayBuffer>();
+
+  uint32_t ndims = js_dims.As<v8::Array>()
+                       ->Get(v8::String::NewFromUtf8(isolate, "length"))
+                       ->NumberValue();
+
+  std::vector<uint64_t> dims(ndims);
+  for (uint32_t i = 0; i < ndims; ++i) {
+    dims[i] = js_dims.As<v8::Array>()->Get(i)->NumberValue();
+  }
+
+  jl_value_t *jl_type = jl_tupletype_fill(ndims, (jl_value_t *)jl_uint64_type);
+  jl_value_t *jl_dims = jl_new_bits(jl_type, dims.data());
+
+  jl_array_t *res =
+      jl_ptr_to_array(jl_apply_array_type(jl_float32_type, ndims),
+                      js_buffer->GetContents().Data(), jl_dims, 0);
+
+  return (jl_value_t *)res;
+}

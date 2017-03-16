@@ -156,21 +156,44 @@ describe("Convert", () => {
         assert.strictEqual(2, Julia.eval("js\"2\""));
     });
 
-    it("JavaScriptArray", () => {
+    // ({dims: [10], data: new Float32Array(10)})
+    //        var convert = Julia.eval("convert");
+    //        console.dir(a);
 
+    it("JavaScriptArray", () => {
+        var convert = Julia.eval("(value) -> convert(Array, value)");
+        var res = Julia.eval("convert(Array, js\"({dims: [10], data: new Float32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])})\")");
+/*
+        var res2 = convert({
+            dims: [10],
+            data: new Float32Array([
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+            ])
+        });
+*/
+        console.dir(res.valueOf());
     });
 
     //    it("JavaScriptString", () => {
     //      assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello, world!\"\""));
     //  });
 
-    it("JavaScriptValue", () => {
-        assert.deepEqual({
-            x: 1,
-            y: 2
-        }, Julia.eval("js\"var z = {x: 1, y: 2}; z\""));
+    //    it("JavaScriptValue", () => {
+    //      assert.deepEqual({
+    //        x: 1,
+    //      y: 2
+    //}, Julia.eval("js\"var z = {x: 1, y: 2}; z\""));
 
-        var res = Julia.eval("convert(Any, js\"var z = {x: 1, y: 2}; z\")");
-        console.log(res);
-    });
+    //        var res = Julia.eval("convert(Any, js\"var z = {x: 1, y: 2}; z\")");
+    //      console.log(res);
+    //  });
 });

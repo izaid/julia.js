@@ -9,3 +9,7 @@ end
 macro js_str(src)
     js(src)
 end
+
+function convert(::Type{Array}, x::JavaScriptValue)
+    ccall((:ToJuliaArray, "julia.node"), Any, (Any,), x)
+end
