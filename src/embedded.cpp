@@ -50,37 +50,60 @@ extern "C" jl_value_t *JSEval(const char *src) {
 // julia -e "println(joinpath(dirname(JULIA_HOME), \"share\", \"julia\",
 // \"julia-config.jl\"))" for OS X
 
-void Init(v8::Local<v8::Object> exports) {
-  v8::Isolate *isolate = exports->GetIsolate();
+char *read_bytes(const char *filename) {
+  FILE *file = fopen(filename, "rb");
+  if (file == NULL) {
+    return NULL;
+  }
+
+  fseek(file, 0, SEEK_END);
+  size_t length = ftell(file);
+  fseek(file, 0, SEEK_SET);
+
+  char *buffer = static_cast<char *>(malloc(length));
+  if (buffer == NULL) {
+    return NULL;
+  }
+
+  fread(buffer, 1, length, file);
+
+  fclose(file);
+
+  return buffer;
+}
+
+void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
+  v8::Isolate *isolate = module->GetIsolate();
 
   NODE_SET_METHOD(exports, "eval", Eval);
   NODE_SET_METHOD(exports, "require", Require);
 
   jl_init_with_image(JULIA_INIT_DIR, JULIA_INIT_DIR "/julia/sys.dylib");
 
-  FILE *f = fopen("js.jl", "rb");
-  if (f == NULL) {
-    printf("FILE NOT FOUND\n");
-    isolate->ThrowException(v8::Exception::Error(
-        v8::String::NewFromUtf8(isolate, "could not open \"js.jl\"")));
-    return;
+  v8::String::Utf8Value filename(
+      module->Get(v8::String::NewFromUtf8(isolate, "filename")));
+  if (filename.length() == 0) {
+    // ... name is not a string
   }
 
-  fseek(f, 0, SEEK_END);
-  size_t length = ftell(f);
-  fseek(f, 0, SEEK_SET);
+  char src_filename[PATH_MAX];
+  strncpy(src_filename, *filename, filename.length() - strlen("julia.node"));
+  src_filename[filename.length() - strlen("julia.node")] = '\0';
+  strcat(src_filename, "js.jl");
 
-  char *buffer = static_cast<char *>(malloc(length));
+  const char *buffer = read_bytes(src_filename);
   if (buffer == NULL) {
-    // ...
+    static const char *message_format = "could not open \"%s\"";
+
+    char message[strlen(message_format) + strlen(src_filename)];
+    sprintf(message, message_format, src_filename);
+
+    isolate->ThrowException(
+        v8::Exception::Error(v8::String::NewFromUtf8(isolate, message)));
+  } else {
+    jl_eval_string(buffer);
+    j2::TranslateJuliaException(isolate);
   }
-
-  fread(buffer, 1, length, f);
-
-  fclose(f);
-
-  jl_eval_string(buffer);
-  j2::TranslateJuliaException(isolate);
 }
 
 NODE_MODULE(julia, Init)
