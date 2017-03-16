@@ -156,6 +156,10 @@ describe("Convert", () => {
         assert.strictEqual(2, Julia.eval("js\"2\""));
     });
 
+    it("JavaScriptArray", () => {
+
+    });
+
     //    it("JavaScriptString", () => {
     //      assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello, world!\"\""));
     //  });

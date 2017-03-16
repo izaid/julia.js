@@ -29,7 +29,7 @@ static void Require(const v8::FunctionCallbackInfo<v8::Value> &info) {
   }
 
   jl_function_t *require = jl_get_function(jl_base_module, "require");
-  jl_call1(require, (jl_value_t *) jl_symbol(*s));
+  jl_call1(require, (jl_value_t *)jl_symbol(*s));
 
   v8::ReturnValue<v8::Value> res = info.GetReturnValue();
   res.Set(j2::FromJuliaModule(isolate, jl_eval_string(*s)));
@@ -47,7 +47,8 @@ extern "C" jl_value_t *JSEval(const char *src) {
       isolate, script->Run(isolate->GetCurrentContext()).ToLocalChecked());
 }
 
-// julia -e "println(joinpath(dirname(JULIA_HOME), \"share\", \"julia\", \"julia-config.jl\"))" for OS X
+// julia -e "println(joinpath(dirname(JULIA_HOME), \"share\", \"julia\",
+// \"julia-config.jl\"))" for OS X
 
 void Init(v8::Local<v8::Object> exports) {
   v8::Isolate *isolate = exports->GetIsolate();
@@ -58,8 +59,9 @@ void Init(v8::Local<v8::Object> exports) {
   jl_init_with_image(JULIA_INIT_DIR, JULIA_INIT_DIR "/julia/sys.dylib");
 
   FILE *f = fopen("js.jl", "rb");
-  if (false) {
-    // ...
+  if (f == NULL) {
+    isolate->ThrowException(v8::Exception::Error(
+        v8::String::NewFromUtf8(isolate, "could not open \"js.jl\"")));
   }
 
   fseek(f, 0, SEEK_END);
