@@ -43,7 +43,7 @@ extern "C" jl_value_t *JSEval(const char *src) {
                           v8::String::NewFromUtf8(isolate, src))
           .ToLocalChecked();
 
-  return j2::FromJavaScriptValue2(
+  return j2::FromJavaScriptValue(
       isolate, script->Run(isolate->GetCurrentContext()).ToLocalChecked());
 }
 

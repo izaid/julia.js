@@ -19,7 +19,7 @@ v8::Local<v8::Value> FromJuliaNothing(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaType(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaTuple(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
-                                    bool exact = false);
+                                    bool exact = true);
 
 v8::Local<v8::FunctionTemplate> NewJavaScriptType(v8::Isolate *isolate,
                                                   jl_datatype_t *type);

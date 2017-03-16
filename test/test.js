@@ -110,7 +110,7 @@ describe("Convert", () => {
 
         let Foo = Julia.eval(`type Foo
                                   qux::Bool
-                                  count::Int32
+                                  count::Int64
                               end;
                               function (self::Foo)(x) 12 + x + self.count end;
                               Foo`);
@@ -156,31 +156,15 @@ describe("Convert", () => {
         assert.strictEqual(2, Julia.eval("js\"2\""));
     });
 
-    // ({dims: [10], data: new Float32Array(10)})
-    //        var convert = Julia.eval("convert");
-    //        console.dir(a);
-
     it("JavaScriptArray", () => {
         var convert = Julia.eval("(value) -> convert(Array, value)");
-        var res = Julia.eval("convert(Array, js\"({dims: [10], data: new Float32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])})\")");
-/*
-        var res2 = convert({
-            dims: [10],
-            data: new Float32Array([
-                0,
-                1,
-                2,
-                3,
-                4,
-                5,
-                6,
-                7,
-                8,
-                9
-            ])
-        });
-*/
-        console.dir(res.valueOf());
+        assert.deepEqual({
+            dims: [5],
+            data: new Float32Array([0, 1, 2, 3, 4])
+        }, convert({
+            dims: [5],
+            data: new Float32Array([0, 1, 2, 3, 4])
+        }).valueOf());
     });
 
     //    it("JavaScriptString", () => {

@@ -205,39 +205,13 @@ jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
     return FromJavaScriptNull(value);
   }
 
-  if (value->IsArray()) {
-    return FromJavaScriptArray(value);
-  }
+  //  if (value->IsArray()) {
+  //  return FromJavaScriptArray(value);
+  //  }
 
-  if (value->IsObject()) {
-    return FromJavaScriptObject(isolate, value);
-  }
-
-  return jl_nothing;
-}
-
-jl_value_t *j2::FromJavaScriptValue2(v8::Isolate *isolate,
-                                     v8::Local<v8::Value> value) {
-
-  //  v8::Local<v8::FunctionTemplate> t = NewJavaScriptType(
-  //    isolate, reinterpret_cast<jl_datatype_t *>(jl_typeof(value)));
-
-  //  v8::Local<v8::Object> inst = t->InstanceTemplate()->NewInstance();
-  // inst->SetInternalField(0, v8::External::New(isolate, value));
-
-  //  return inst;
-
-  if (value->IsNumber()) {
-    return FromJavaScriptNumber(value);
-  }
-
-  if (value->IsString()) {
-    return FromJavaScriptString(value);
-  }
-
-  if (value->IsNull()) {
-    return FromJavaScriptNull(value);
-  }
+  //  if (value->IsObject()) {
+  //    return FromJavaScriptObject(isolate, value);
+  //}
 
   jl_value_t *func = jl_eval_string("JavaScriptValue");
   jl_value_t *v = jl_new_struct((jl_datatype_t *)func);
