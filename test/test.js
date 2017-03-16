@@ -168,13 +168,25 @@ describe("Convert", () => {
             data: new Float32Array([0, 1, 2, 3, 4])
         }).valueOf());
 
+        assert.deepEqual({
+            dims: [
+                2, 2
+            ],
+            data: new Uint8Array([0, 1, 2, 3])
+        }, convertArray({
+            dims: [
+                2, 2
+            ],
+            data: new Uint8Array([0, 1, 2, 3])
+        }).valueOf());
+
+/*
         var res = convertArray({
             dims: [5],
             data: new Float32Array([0, 1, 2, 3, 4])
         });
         var res2 = size(res);
-
-        console.dir(res2.valueOf());
+*/
 
         /*
         assert.deepEqual({
@@ -186,6 +198,7 @@ describe("Convert", () => {
         })).valueOf());
 */
 
+/*
         assert.deepEqual({
             dims: [5],
             data: new Uint8Array([0, 1, 2, 3, 4])
@@ -193,6 +206,7 @@ describe("Convert", () => {
             dims: [5],
             data: new Uint8Array([0, 1, 2, 3, 4])
         }).valueOf());
+*/
     });
 
     //    it("JavaScriptString", () => {
