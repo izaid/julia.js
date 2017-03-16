@@ -50,28 +50,6 @@ extern "C" jl_value_t *JSEval(const char *src) {
 // julia -e "println(joinpath(dirname(JULIA_HOME), \"share\", \"julia\",
 // \"julia-config.jl\"))" for OS X
 
-char *read_bytes(const char *filename) {
-  FILE *file = fopen(filename, "rb");
-  if (file == NULL) {
-    return NULL;
-  }
-
-  fseek(file, 0, SEEK_END);
-  size_t length = ftell(file);
-  fseek(file, 0, SEEK_SET);
-
-  char *buffer = static_cast<char *>(malloc(length));
-  if (buffer == NULL) {
-    return NULL;
-  }
-
-  fread(buffer, 1, length, file);
-
-  fclose(file);
-
-  return buffer;
-}
-
 void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
   v8::Isolate *isolate = module->GetIsolate();
 
@@ -91,19 +69,13 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
   src_filename[filename.length() - strlen("julia.node")] = '\0';
   strcat(src_filename, "js.jl");
 
-  const char *buffer = read_bytes(src_filename);
-  if (buffer == NULL) {
-    static const char *message_format = "could not open \"%s\"";
-
-    char message[strlen(message_format) + strlen(src_filename)];
-    sprintf(message, message_format, src_filename);
-
-    isolate->ThrowException(
-        v8::Exception::Error(v8::String::NewFromUtf8(isolate, message)));
-  } else {
-    jl_eval_string(buffer);
-    j2::TranslateJuliaException(isolate);
+  jl_value_t *include = jl_get_function(jl_main_module, "include");
+  if (include == NULL) {
+    printf("NULL INCLUDE!\n");
   }
+
+  jl_call1(include, jl_cstr_to_string(src_filename));
+  j2::TranslateJuliaException(isolate);
 }
 
 NODE_MODULE(julia, Init)

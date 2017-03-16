@@ -1,12 +1,10 @@
-type JavaScriptValue
-    val::Ptr{Void}
-end
-
 macro NODE_FILE()
     path = joinpath(dirname(@__FILE__), "julia.node")
-    println(path)
-    println(pwd())
     return :($path)
+end
+
+type JavaScriptValue
+    val::Ptr{Void}
 end
 
 function js(src)
