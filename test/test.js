@@ -3,6 +3,7 @@ var assert = require('assert');
 var Julia = require('../julia');
 
 describe("Convert", () => {
+/*
     it("Bool", () => {
         assert.strictEqual(true, Julia.eval("true"));
         assert.strictEqual(false, Julia.eval("false"));
@@ -64,8 +65,10 @@ describe("Convert", () => {
             0, 1, 2, 3, 4
         ], Julia.eval("(0, 1, 2, 3, 4)").valueOf());
     });
+*/
 
     it("Array", () => {
+/*
         assert.deepEqual({
             dims: [5],
             data: new Float32Array([0, 1, 2, 3, 4])
@@ -76,12 +79,14 @@ describe("Convert", () => {
             ],
             data: new Float32Array([0, 1, 2, 3])
         }, Julia.eval("[[0.0f0, 1.0f0] [2.0f0, 3.0f0]]").valueOf());
+*/
 
-        //        for (var i = 0; i < 2500; ++i) {
-        //          var a = julia.eval("zeros(Float32, 512 * 512)");
-        //    }
-    });
+        for (var i = 0; i < 1000; ++i) {
+            Julia.eval("rand(512, 512)");
+        }
+    }).timeout(10000);
 
+/*
     it("Function", () => {
         let f = Julia.eval("() -> 0");
         assert(f instanceof Function);
@@ -147,70 +152,36 @@ describe("Convert", () => {
             "detect_ambiguities"
         ], Object.keys(Test).sort());
     });
-
-    it("JavaScriptNull", () => {
-        assert.strictEqual(null, Julia.eval("js\"null\""));
-    });
-
-    it("JavaScriptNumber", () => {
-        assert.strictEqual(2, Julia.eval("js\"2\""));
-    });
-
-    it("JavaScriptArray", () => {
-        var convertArray = Julia.eval("(value) -> convert(Array, value)");
-        var size = Julia.eval("size");
-
-        assert.deepEqual({
-            dims: [5],
-            data: new Float32Array([0, 1, 2, 3, 4])
-        }, convertArray({
-            dims: [5],
-            data: new Float32Array([0, 1, 2, 3, 4])
-        }).valueOf());
-
-        assert.deepEqual({
-            dims: [
-                2, 2
-            ],
-            data: new Uint8Array([0, 1, 2, 3])
-        }, convertArray({
-            dims: [
-                2, 2
-            ],
-            data: new Uint8Array([0, 1, 2, 3])
-        }).valueOf());
-
-/*
-        var res = convertArray({
-            dims: [5],
-            data: new Float32Array([0, 1, 2, 3, 4])
-        });
-        var res2 = size(res);
 */
 
-        /*
-        assert.deepEqual({
-            dims: [5],
-            data: new Float32Array([0, 1, 2, 3, 4])
-        }, convertArray(convertArray({
-            dims: [5],
-            data: new Float32Array([0, 1, 2, 3, 4])
-        })).valueOf());
-*/
+    /*
+  it("JavaScriptNull",
+     () => { assert.strictEqual(null, Julia.eval("js\"null\"")); });
 
-/*
-        assert.deepEqual({
-            dims: [5],
-            data: new Uint8Array([0, 1, 2, 3, 4])
-        }, convertArray({
-            dims: [5],
-            data: new Uint8Array([0, 1, 2, 3, 4])
-        }).valueOf());
+  it("JavaScriptNumber",
+     () => { assert.strictEqual(2, Julia.eval("js\"2\"")); });
+
+  it("JavaScriptArray", () => {
+    var convertArray = Julia.eval("(value) -> convert(Array, value)");
+    var size = Julia.eval("size");
+
+    assert.deepEqual({dims : [ 5 ], data : new Float32Array([ 0, 1, 2, 3, 4 ])},
+                     convertArray({
+                       dims : [ 5 ],
+                       data : new Float32Array([ 0, 1, 2, 3, 4 ])
+                     }).valueOf());
+
+    assert.deepEqual({dims : [ 2, 2 ], data : new Uint8Array([ 0, 1, 2, 3 ])},
+                     convertArray({
+                       dims : [ 2, 2 ],
+                       data : new Uint8Array([ 0, 1, 2, 3 ])
+                     }).valueOf());
+  });
 */
-    });
 
     //    it("JavaScriptString", () => {
-    //      assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello, world!\"\""));
+    //      assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello,
+    //      world!\"\""));
     //  });
 
     //    it("JavaScriptValue", () => {

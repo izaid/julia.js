@@ -9,7 +9,8 @@
 
 namespace j2 {
 
-static std::map<std::string, v8::UniquePersistent<v8::FunctionTemplate>> types;
+std::map<std::string, v8::UniquePersistent<v8::FunctionTemplate>> types;
+std::map<jl_value_t *, v8::UniquePersistent<v8::Object>> Persistents;
 
 } // namespace j2
 
@@ -545,6 +546,83 @@ v8::Local<v8::Value> j2::FromJuliaModule(v8::Isolate *isolate,
   return module;
 }
 
+v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
+                                        jl_value_t *value) {
+  printf("PUSHING!\n");
+
+  v8::Local<v8::FunctionTemplate> t = NewJavaScriptType(
+      isolate, reinterpret_cast<jl_datatype_t *>(jl_typeof(value)));
+
+  v8::Local<v8::Object> js_value = t->InstanceTemplate()->NewInstance();
+  js_value->SetInternalField(0, v8::External::New(isolate, value));
+
+  static jl_value_t *jl_push = jl_get_function(jl_main_module, "mypush");
+  if (jl_push == NULL) {
+    printf("NULL PUSH\n");
+  }
+
+  static jl_value_t *jl_sizeof = jl_get_function(jl_main_module, "sizeof");
+  if (jl_sizeof == NULL) {
+    printf("NULL SIZE\n");
+  }
+
+  auto p = Persistents.emplace(std::piecewise_construct,
+                               std::forward_as_tuple(value),
+                               std::forward_as_tuple(isolate, js_value));
+  if (!p.second) {
+    printf("COLLISION!\n");
+  }
+
+  auto it = p.first;
+
+  it->second.SetWeak(value,
+                     [](const v8::WeakCallbackInfo<jl_value_t> &data) -> void {
+                       PopJuliaValue(data.GetIsolate(), data.GetParameter());
+                     },
+                     v8::WeakCallbackType::kParameter);
+
+  size_t size = jl_unbox_int64(jl_call1(jl_sizeof, value));
+  printf("size = %u\n", size);
+
+  jl_call1(jl_push, value);
+  j2::TranslateJuliaException(isolate);
+
+  isolate->AdjustAmountOfExternalAllocatedMemory(size);
+
+  return js_value;
+}
+
+void j2::PopJuliaValue(v8::Isolate *isolate, jl_value_t *value) {
+  printf("POPING!\n");
+  if (value == NULL) {
+    printf("NULL VALUE\n");
+  }
+
+  static jl_value_t *f = jl_get_function(jl_main_module, "mypop");
+  if (f == NULL) {
+    printf("NULL POP\n");
+  }
+
+  static jl_value_t *jl_sizeof = jl_get_function(jl_main_module, "sizeof");
+  if (jl_sizeof == NULL) {
+    printf("NULL SIZE\n");
+  }
+
+  JL_GC_PUSH1(&value);
+
+  size_t size = jl_unbox_int64(jl_call1(jl_sizeof, value));
+  printf("size = %u\n", size);
+
+  jl_call1(f, value);
+  TranslateJuliaException(isolate);
+
+  JL_GC_POP();
+
+  isolate->AdjustAmountOfExternalAllocatedMemory(size);
+
+  Persistents.erase(value);
+}
+
 v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
                                         bool exact) {
   if (jl_is_bool(value)) {
@@ -615,13 +693,7 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
     return obj;
   }
 
-  v8::Local<v8::FunctionTemplate> t = NewJavaScriptType(
-      isolate, reinterpret_cast<jl_datatype_t *>(jl_typeof(value)));
-
-  v8::Local<v8::Object> inst = t->InstanceTemplate()->NewInstance();
-  inst->SetInternalField(0, v8::External::New(isolate, value));
-
-  return inst;
+  return PushJuliaValue(isolate, value);
 }
 
 v8::Local<v8::Value> UnboxJavaScriptValue(v8::Isolate *isolate,

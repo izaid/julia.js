@@ -4,6 +4,9 @@
 
 namespace j2 {
 
+v8::Local<v8::Value> PushJuliaValue(v8::Isolate *isolate, jl_value_t *value);
+void PopJuliaValue(v8::Isolate *isolate, jl_value_t *value);
+
 int TranslateJuliaException(v8::Isolate *isolate);
 
 v8::Local<v8::Value> FromJuliaArray(v8::Isolate *isolate, jl_value_t *value);

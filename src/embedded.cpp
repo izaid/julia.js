@@ -50,6 +50,7 @@ extern "C" jl_value_t *JSEval(const char *src) {
 // julia -e "println(joinpath(dirname(JULIA_HOME), \"share\", \"julia\",
 // \"julia-config.jl\"))" for OS X
 
+
 void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
   v8::Isolate *isolate = module->GetIsolate();
 
@@ -75,6 +76,9 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
   }
 
   jl_call1(include, jl_cstr_to_string(src_filename));
+  j2::TranslateJuliaException(isolate);
+
+  jl_value_t *f = jl_get_function(jl_main_module, "myfunc");
   j2::TranslateJuliaException(isolate);
 }
 
