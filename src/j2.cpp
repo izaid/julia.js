@@ -642,9 +642,9 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
     return FromJuliaType(isolate, value);
   }
 
-  if (jl_subtype(value, reinterpret_cast<jl_value_t *>(jl_function_type), 1)) {
-    return FromJuliaFunction(isolate, value);
-  }
+//  if (jl_subtype(value, reinterpret_cast<jl_value_t *>(jl_function_type), 1)) {
+  //  return FromJuliaFunction(isolate, value);
+  //}
 
   if (jl_is_module(value)) {
     return FromJuliaModule(isolate, value);
