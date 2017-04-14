@@ -30,10 +30,8 @@ describe("Convert", () => {
     //  });
 
     it("GarbageCollection", () => {
-        for (var i = 0; i < 10; ++i) {
-            Julia.eval("rand(512, 512)");
-            var s = Julia.shared();
-            console.log("shared.length =", s.length);
+        for (let i = 0; i < 1000; ++i) {
+            Julia.eval("rand(500, 500)");
         }
     }).timeout(10000);
 

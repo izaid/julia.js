@@ -12,7 +12,6 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
 
   NODE_SET_METHOD(exports, "eval", j2::Eval);
   NODE_SET_METHOD(exports, "require", j2::Require);
-  NODE_SET_METHOD(exports, "shared", j2::Shared);
 
   jl_init_with_image(JULIA_INIT_DIR, JULIA_INIT_DIR "/julia/sys.dylib");
 
@@ -34,6 +33,9 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
 
   jl_call1(include, jl_cstr_to_string(src_filename));
   j2::TranslateJuliaException(isolate);
+
+  j2::js_module = reinterpret_cast<jl_module_t *>(
+      jl_get_global(jl_main_module, jl_symbol("JavaScript")));
 
   jl_value_t *f = jl_get_function(jl_main_module, "myfunc");
   j2::TranslateJuliaException(isolate);

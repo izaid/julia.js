@@ -30,8 +30,11 @@ v8::Local<v8::Object> NewTypedArray(v8::Isolate *isolate, const char *name,
 }
 
 bool j2::TranslateJuliaException(v8::Isolate *isolate) {
+  static jl_module_t *js_module = reinterpret_cast<jl_module_t *>(
+      jl_get_global(jl_main_module, jl_symbol("JavaScript")));
+
   static jl_value_t *catch_message =
-      jl_get_function(jl_main_module, "catch_message");
+      jl_get_function(js_module, "catch_message");
   assert(catch_message != nullptr);
 
   jl_value_t *e = jl_exception_occurred();
@@ -545,23 +548,20 @@ v8::Local<v8::Value> j2::FromJuliaModule(v8::Isolate *isolate,
 
 v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
                                         jl_value_t *value) {
-  printf("PUSHING!\n");
+  static jl_value_t *size = jl_get_function(jl_main_module, "sizeof");
+  assert(size != nullptr);
+
+  static jl_value_t *push = jl_get_function(jl_main_module, "push!");
+  assert(push != nullptr);
+
+  static jl_value_t *shared = jl_get_function(js_module, "SHARED");
+  assert(shared != nullptr);
 
   v8::Local<v8::FunctionTemplate> t = NewJavaScriptType(
       isolate, reinterpret_cast<jl_datatype_t *>(jl_typeof(value)));
 
   v8::Local<v8::Object> js_value = t->InstanceTemplate()->NewInstance();
   js_value->SetInternalField(0, v8::External::New(isolate, value));
-
-  static jl_value_t *jl_push = jl_get_function(jl_main_module, "mypush");
-  if (jl_push == NULL) {
-    printf("NULL PUSH\n");
-  }
-
-  static jl_value_t *jl_sizeof = jl_get_function(jl_main_module, "sizeof");
-  if (jl_sizeof == NULL) {
-    printf("NULL SIZE\n");
-  }
 
   auto p = Persistents.emplace(std::piecewise_construct,
                                std::forward_as_tuple(value),
@@ -578,44 +578,40 @@ v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
                      },
                      v8::WeakCallbackType::kParameter);
 
-  size_t size = jl_unbox_int64(jl_call1(jl_sizeof, value));
-  printf("size = %u\n", size);
+  JL_GC_PUSH2(&shared, &value);
 
-  jl_call1(jl_push, value);
-  j2::TranslateJuliaException(isolate);
+  jl_call2(push, shared, value);
+  TranslateJuliaException(isolate);
 
-  isolate->AdjustAmountOfExternalAllocatedMemory(size);
+  isolate->AdjustAmountOfExternalAllocatedMemory(
+      jl_unbox_int64(jl_call1(size, value)));
+
+  JL_GC_POP();
 
   return js_value;
 }
 
+jl_module_t *j2::js_module;
+
 void j2::PopJuliaValue(v8::Isolate *isolate, jl_value_t *value) {
-  printf("POPING!\n");
-  if (value == NULL) {
-    printf("NULL VALUE\n");
-  }
+  static jl_value_t *pop = jl_get_function(jl_main_module, "pop!");
+  assert(pop != nullptr);
 
-  static jl_value_t *f = jl_get_function(jl_main_module, "mypop");
-  if (f == NULL) {
-    printf("NULL POP\n");
-  }
+  static jl_value_t *size = jl_get_function(jl_main_module, "sizeof");
+  assert(size != nullptr);
 
-  static jl_value_t *jl_sizeof = jl_get_function(jl_main_module, "sizeof");
-  if (jl_sizeof == NULL) {
-    printf("NULL SIZE\n");
-  }
+  static jl_value_t *shared = jl_get_function(js_module, "SHARED");
+  assert(shared != nullptr);
 
-  JL_GC_PUSH1(&value);
+  JL_GC_PUSH2(&shared, &value);
 
-  size_t size = jl_unbox_int64(jl_call1(jl_sizeof, value));
-  printf("size = %u\n", size);
-
-  jl_call1(f, value);
+  jl_call2(pop, shared, value);
   TranslateJuliaException(isolate);
 
-  JL_GC_POP();
+  isolate->AdjustAmountOfExternalAllocatedMemory(
+      jl_unbox_int64(jl_call1(size, value)));
 
-  isolate->AdjustAmountOfExternalAllocatedMemory(size);
+  JL_GC_POP();
 
   Persistents.erase(value);
 }
@@ -778,21 +774,6 @@ void j2::Require(const v8::FunctionCallbackInfo<v8::Value> &info) {
 
   v8::ReturnValue<v8::Value> res = info.GetReturnValue();
   res.Set(j2::FromJuliaModule(isolate, jl_eval_string(*s)));
-}
-
-void j2::Shared(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  v8::Local<v8::Array> shared = v8::Array::New(isolate, Persistents.size());
-  int i = 0;
-  for (const auto &pair : Persistents) {
-    const v8::UniquePersistent<v8::Object> &value = pair.second;
-    shared->Set(i, value.Get(isolate));
-    ++i;
-  }
-
-  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-  res.Set(shared);
 }
 
 extern "C" jl_value_t *JSEval(const char *src) {

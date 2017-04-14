@@ -4,6 +4,8 @@
 
 namespace j2 {
 
+extern jl_module_t *js_module;
+
 v8::Local<v8::Value> PushJuliaValue(v8::Isolate *isolate, jl_value_t *value);
 void PopJuliaValue(v8::Isolate *isolate, jl_value_t *value);
 
@@ -50,7 +52,6 @@ jl_value_t *FromJavaScriptValue2(v8::Isolate *isolate,
 
 void Eval(const v8::FunctionCallbackInfo<v8::Value> &info);
 void Require(const v8::FunctionCallbackInfo<v8::Value> &info);
-void Shared(const v8::FunctionCallbackInfo<v8::Value> &info);
 
 } // namespace j2
 
