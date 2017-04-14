@@ -650,6 +650,7 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
     return FromJuliaModule(isolate, value);
   }
 
+/*
   jl_value_t *datatype = jl_eval_string("JavaScriptValue");
   if (jl_subtype(value, datatype, 1)) {
     v8::Persistent<v8::Value> *val =
@@ -657,6 +658,7 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
             jl_get_nth_field(value, 0));
     return val->Get(isolate);
   }
+*/
 
   if (!exact) {
     if (jl_is_int32(value)) {
