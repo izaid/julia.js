@@ -15,7 +15,7 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
   NODE_SET_METHOD(exports, "eval", j2::Eval);
   NODE_SET_METHOD(exports, "require", j2::Require);
 
-  jl_init_with_image(JULIA_INIT_DIR, "julia/sys.so");
+  jl_init(JULIA_INIT_DIR);
 
   v8::String::Utf8Value filename(
       module->Get(v8::String::NewFromUtf8(isolate, "filename")));
