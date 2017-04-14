@@ -700,6 +700,7 @@ v8::Local<v8::Value> UnboxJavaScriptValue(v8::Isolate *isolate,
   return persistent.Get(isolate);
 }
 
+/*
 jl_value_t *ToJuliaArray(jl_value_t *jl_value) {
   static const std::unordered_map<std::string, jl_datatype_t *> jl_eltypes{
       {"Uint8Array", jl_uint8_type},
@@ -741,6 +742,7 @@ jl_value_t *ToJuliaArray(jl_value_t *jl_value) {
 
   return (jl_value_t *)res;
 }
+*/
 
 void j2::Eval(const v8::FunctionCallbackInfo<v8::Value> &info) {
   v8::Isolate *isolate = info.GetIsolate();
