@@ -16,7 +16,7 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
   NODE_SET_METHOD(exports, "require", j2::Require);
 
   printf("path = %s\n", JULIA_INIT_DIR "/julia/sys.dylib");
-  jl_init_with_image(JULIA_INIT_DIR, JULIA_INIT_DIR "/julia/sys.dylib");
+  jl_init_with_image(JULIA_INIT_DIR, JULIA_INIT_DIR "/julia/sys.so");
 
   v8::String::Utf8Value filename(
       module->Get(v8::String::NewFromUtf8(isolate, "filename")));
