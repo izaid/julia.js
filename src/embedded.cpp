@@ -9,7 +9,12 @@
 
 using namespace j2;
 
+
+#include <dlfcn.h>
+
 void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
+  dlopen("[path/to/libjulia]", RTLD_GLOBAL);
+
   v8::Isolate *isolate = module->GetIsolate();
 
   NODE_SET_METHOD(exports, "eval", j2::Eval);
