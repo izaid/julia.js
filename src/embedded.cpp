@@ -7,6 +7,8 @@
 // julia -e "println(joinpath(dirname(JULIA_HOME), \"share\", \"julia\",
 // \"julia-config.jl\"))" for OS X
 
+using namespace j2;
+
 void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
   v8::Isolate *isolate = module->GetIsolate();
 
@@ -34,11 +36,9 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
   jl_call1(include, jl_cstr_to_string(src_filename));
   j2::TranslateJuliaException(isolate);
 
-  j2::js_module = reinterpret_cast<jl_module_t *>(
+  js_module = reinterpret_cast<jl_module_t *>(
       jl_get_global(jl_main_module, jl_symbol("JavaScript")));
-
-  jl_value_t *f = jl_get_function(jl_main_module, "myfunc");
-  j2::TranslateJuliaException(isolate);
+  TranslateJuliaException(isolate);
 }
 
 NODE_MODULE(julia, Init)

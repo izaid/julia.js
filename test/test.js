@@ -89,8 +89,8 @@ describe("Convert", () => {
     });
 */
 
-    //    it("Array", () => {
-    /*
+/*
+    it("Array", () => {
         assert.deepEqual({
             dims: [5],
             data: new Float32Array([0, 1, 2, 3, 4])
@@ -101,9 +101,8 @@ describe("Convert", () => {
             ],
             data: new Float32Array([0, 1, 2, 3])
         }, Julia.eval("[[0.0f0, 1.0f0] [2.0f0, 3.0f0]]").valueOf());
+    }).timeout(10000);
 */
-
-    //    }).timeout(10000);
 
     /*
     it("Function", () => {
