@@ -9,17 +9,13 @@
 
 using namespace j2;
 
-
-#include <dlfcn.h>
-
 void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
-  dlopen("[path/to/libjulia]", RTLD_GLOBAL);
-
   v8::Isolate *isolate = module->GetIsolate();
 
   NODE_SET_METHOD(exports, "eval", j2::Eval);
   NODE_SET_METHOD(exports, "require", j2::Require);
 
+  printf("path = %s\n", JULIA_INIT_DIR "/julia/sys.dylib");
   jl_init_with_image(JULIA_INIT_DIR, JULIA_INIT_DIR "/julia/sys.dylib");
 
   v8::String::Utf8Value filename(
