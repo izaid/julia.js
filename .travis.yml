@@ -25,3 +25,6 @@ before_install:
   - curl -A "$CURL_USER_AGENT" -s -L --retry 7 'https://s3.amazonaws.com/julialang/bin/linux/x64/0.5/julia-0.5-latest-linux-x86_64.tar.gz' | tar -C ~/julia -x -z --strip-components=1 -f -
   - export PATH="${PATH}:${HOME}/julia/bin"
   - julia -e 'versioninfo()'
+
+notifications:
+  email: false
