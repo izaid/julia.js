@@ -27,7 +27,7 @@ before_install:
   - ls /home/travis/julia/lib
   - ls /home/travis/julia/lib/julia
   - julia -e 'versioninfo()'
-#  - export LD_PRELOAD=/home/travis/julia/lib/libjulia.so
+  - export LD_PRELOAD=/home/travis/julia/lib/libjulia.so
 
 notifications:
   email: false
