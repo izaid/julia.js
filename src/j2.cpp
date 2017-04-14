@@ -32,10 +32,10 @@ v8::Local<v8::Object> NewTypedArray(v8::Isolate *isolate, const char *name,
 bool j2::TranslateJuliaException(v8::Isolate *isolate) {
   static jl_value_t *catch_message =
       jl_get_function(jl_main_module, "catch_message");
-  assert(catch_message != NULL);
+  assert(catch_message != nullptr);
 
   jl_value_t *e = jl_exception_occurred();
-  if (e == NULL) {
+  if (e == nullptr) {
     return false;
   }
 
@@ -778,6 +778,21 @@ void j2::Require(const v8::FunctionCallbackInfo<v8::Value> &info) {
 
   v8::ReturnValue<v8::Value> res = info.GetReturnValue();
   res.Set(j2::FromJuliaModule(isolate, jl_eval_string(*s)));
+}
+
+void j2::Shared(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::Local<v8::Array> shared = v8::Array::New(isolate, Persistents.size());
+  int i = 0;
+  for (const auto &pair : Persistents) {
+    const v8::UniquePersistent<v8::Object> &value = pair.second;
+    shared->Set(i, value.Get(isolate));
+    ++i;
+  }
+
+  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+  res.Set(shared);
 }
 
 extern "C" jl_value_t *JSEval(const char *src) {

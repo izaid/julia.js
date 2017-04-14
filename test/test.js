@@ -3,6 +3,12 @@ var assert = require('assert');
 var Julia = require('../julia');
 
 describe("Convert", () => {
+    //    it("Shared", () => {
+    // ...
+    //      var s = Julia.shared();
+    //    console.log(s);
+    //    });
+
     it("TranslateException", () => {
         assert.throws(() => {
             Julia.eval("sqrt(-1)");
@@ -13,20 +19,28 @@ describe("Convert", () => {
         }, /^Error: UndefVarError:/);
     });
 
+    it("Int64", () => {
+        assert.strictEqual(0, Julia.eval("Int64(0)"));
+        assert.strictEqual(1, Julia.eval("Int64(1)"));
+    });
+
+    //    it("Int32", () => {
+    //      assert.strictEqual(0, Julia.eval("Int32(0)").valueOf());
+    //    assert.strictEqual(1, Julia.eval("Int32(1)").valueOf());
+    //  });
+
+    it("GarbageCollection", () => {
+        for (var i = 0; i < 10; ++i) {
+            Julia.eval("rand(512, 512)");
+            var s = Julia.shared();
+            console.log("shared.length =", s.length);
+        }
+    }).timeout(10000);
+
     /*
     it("Bool", () => {
         assert.strictEqual(true, Julia.eval("true"));
         assert.strictEqual(false, Julia.eval("false"));
-    });
-
-    it("Int32", () => {
-        assert.strictEqual(0, Julia.eval("Int32(0)").valueOf());
-        assert.strictEqual(1, Julia.eval("Int32(1)").valueOf());
-    });
-
-    it("Int64", () => {
-        assert.strictEqual(0, Julia.eval("Int64(0)"));
-        assert.strictEqual(1, Julia.eval("Int64(1)"));
     });
 
     it("Float32", () => {
@@ -91,9 +105,6 @@ describe("Convert", () => {
         }, Julia.eval("[[0.0f0, 1.0f0] [2.0f0, 3.0f0]]").valueOf());
 */
 
-    //    for (var i = 0; i < 100; ++i) {
-    //      Julia.eval("rand(512, 512)");
-    //  }
     //    }).timeout(10000);
 
     /*

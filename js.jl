@@ -14,13 +14,11 @@ end
 store = ObjectIdDict()
 
 function mypush(val)
-    safe_print(length(store))
     setindex!(store, val, val)
 end
 
 function mypop(val)
     pop!(store, val)
-    safe_print(length(store))
 end
 
 function js(src)
