@@ -3,7 +3,17 @@ var assert = require('assert');
 var Julia = require('../julia');
 
 describe("Convert", () => {
-/*
+    it("TranslateException", () => {
+        assert.throws(() => {
+            Julia.eval("sqrt(-1)");
+        }, /^Error: DomainError:/);
+
+        assert.throws(() => {
+            Julia.eval("x");
+        }, /^Error: UndefVarError:/);
+    });
+
+    /*
     it("Bool", () => {
         assert.strictEqual(true, Julia.eval("true"));
         assert.strictEqual(false, Julia.eval("false"));
@@ -67,8 +77,8 @@ describe("Convert", () => {
     });
 */
 
-    it("Array", () => {
-/*
+    //    it("Array", () => {
+    /*
         assert.deepEqual({
             dims: [5],
             data: new Float32Array([0, 1, 2, 3, 4])
@@ -81,12 +91,12 @@ describe("Convert", () => {
         }, Julia.eval("[[0.0f0, 1.0f0] [2.0f0, 3.0f0]]").valueOf());
 */
 
-        for (var i = 0; i < 1000; ++i) {
-            Julia.eval("rand(512, 512)");
-        }
-    }).timeout(10000);
+    //    for (var i = 0; i < 100; ++i) {
+    //      Julia.eval("rand(512, 512)");
+    //  }
+    //    }).timeout(10000);
 
-/*
+    /*
     it("Function", () => {
         let f = Julia.eval("() -> 0");
         assert(f instanceof Function);

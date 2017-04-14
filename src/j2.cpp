@@ -29,23 +29,20 @@ v8::Local<v8::Object> NewTypedArray(v8::Isolate *isolate, const char *name,
   return constructor->NewInstance(3, args);
 }
 
-int j2::TranslateJuliaException(v8::Isolate *isolate) {
-  jl_value_t *exception = jl_exception_occurred();
-  if (exception != NULL) {
-    JL_GC_PUSH1(&exception);
+bool j2::TranslateJuliaException(v8::Isolate *isolate) {
+  static jl_value_t *catch_message =
+      jl_get_function(jl_main_module, "catch_message");
+  assert(catch_message != NULL);
 
-    const char *message = jl_typeof_str(exception);
-    jl_value_t *message2 = jl_get_field(exception, "msg");
-
-    isolate->ThrowException(v8::Exception::Error(
-        v8::String::NewFromUtf8(isolate, jl_string_data(message2))));
-
-    JL_GC_POP();
-
-    return 1;
+  jl_value_t *e = jl_exception_occurred();
+  if (e == NULL) {
+    return false;
   }
 
-  return 0;
+  isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(
+      isolate, jl_string_data(jl_call1(catch_message, e)))));
+
+  return true;
 }
 
 jl_value_t *j2::FromJavaScriptArray(v8::Local<v8::Value> value) {
@@ -745,4 +742,52 @@ jl_value_t *ToJuliaArray(jl_value_t *jl_value) {
                       js_buffer->GetContents().Data(), jl_dims, 0);
 
   return (jl_value_t *)res;
+}
+
+void j2::Eval(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::String::Utf8Value s(info[0]);
+  if (*s == NULL) {
+    printf("NULL\n");
+    isolate->ThrowException(
+        v8::Exception::Error(v8::String::NewFromUtf8(isolate, "Error")));
+    return;
+  }
+
+  jl_value_t *value = jl_eval_string(*s);
+  if (TranslateJuliaException(isolate)) {
+    return;
+  }
+
+  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+  res.Set(FromJuliaValue(isolate, value, true));
+}
+
+void j2::Require(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::Local<v8::Value> code = info[0]->ToObject();
+  v8::String::Utf8Value s(code);
+  if (s.length() == 0) {
+    // ... name is not a string
+  }
+
+  jl_function_t *require = jl_get_function(jl_base_module, "require");
+  jl_call1(require, (jl_value_t *)jl_symbol(*s));
+
+  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+  res.Set(j2::FromJuliaModule(isolate, jl_eval_string(*s)));
+}
+
+extern "C" jl_value_t *JSEval(const char *src) {
+  v8::Isolate *isolate = v8::Isolate::GetCurrent();
+
+  v8::Local<v8::Script> script =
+      v8::Script::Compile(isolate->GetCurrentContext(),
+                          v8::String::NewFromUtf8(isolate, src))
+          .ToLocalChecked();
+
+  return j2::FromJavaScriptValue(
+      isolate, script->Run(isolate->GetCurrentContext()).ToLocalChecked());
 }

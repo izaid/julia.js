@@ -7,7 +7,7 @@ namespace j2 {
 v8::Local<v8::Value> PushJuliaValue(v8::Isolate *isolate, jl_value_t *value);
 void PopJuliaValue(v8::Isolate *isolate, jl_value_t *value);
 
-int TranslateJuliaException(v8::Isolate *isolate);
+bool TranslateJuliaException(v8::Isolate *isolate);
 
 v8::Local<v8::Value> FromJuliaArray(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaBool(v8::Isolate *isolate, jl_value_t *value);
@@ -44,6 +44,10 @@ jl_value_t *FromJavaScriptValue(v8::Isolate *isolate,
 
 jl_value_t *FromJavaScriptValue2(v8::Isolate *isolate,
                                  v8::Local<v8::Value> value);
+
+void Eval(const v8::FunctionCallbackInfo<v8::Value> &info);
+
+void Require(const v8::FunctionCallbackInfo<v8::Value> &info);
 
 } // namespace j2
 

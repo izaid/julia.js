@@ -34,3 +34,7 @@ end
 function convert(::Type{Array}, x::JavaScriptValue)
     ccall((:ToJuliaArray, @NODE_FILE), Any, (Any,), x)
 end
+
+function catch_message(e)
+    sprint(showerror, e, catch_backtrace())
+end
