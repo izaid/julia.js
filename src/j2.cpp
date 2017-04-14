@@ -79,6 +79,7 @@ jl_datatype_t *UnboxJuliaArrayElementType(v8::Isolate *isolate,
   return NULL;
 }
 
+/*
 jl_value_t *UnboxJuliaArrayType(v8::Isolate *isolate,
                                 v8::Local<v8::Object> value) {
   jl_datatype_t *eltype = UnboxJuliaArrayElementType(isolate, value);
@@ -89,7 +90,9 @@ jl_value_t *UnboxJuliaArrayType(v8::Isolate *isolate,
 
   return res;
 }
+*/
 
+/*
 jl_value_t *j2::FromJavaScriptJuliaArrayDescriptor(v8::Isolate *isolate,
                                                    v8::Local<v8::Value> value) {
   v8::Local<v8::Object> data =
@@ -118,6 +121,7 @@ jl_value_t *j2::FromJavaScriptJuliaArrayDescriptor(v8::Isolate *isolate,
 
   return (jl_value_t *)res;
 }
+*/
 
 jl_value_t *j2::FromJavaScriptBoolean(v8::Local<v8::Value> value) {
   return jl_box_bool(value->ToBoolean()->Value());
