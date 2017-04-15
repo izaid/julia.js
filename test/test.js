@@ -31,7 +31,7 @@ describe("Julia", () => {
         assert.throws(() => {
             Julia.eval("x");
         }, /^Error: UndefVarError/);
-    }).timeout(4000);
+    }).timeout(10000);
 
     it("Bool", () => {
         assert.strictEqual(true, Julia.eval("true"));
