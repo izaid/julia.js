@@ -6,10 +6,10 @@
             "sources": [ "src/j2.cpp", "src/embedded.cpp" ],
             "include_dirs": ["include"],
             'libraries': ['<!@(<(julia_config) --ldlibs)'],
-            'cflags': ['<!@(<(julia_config) --cflags)'],
+            'cflags': ['<!@(<(julia_config) --cflags)', '-Werror -Wall'],
             'ldflags': ['<!@(<(julia_config) --ldflags)'],
             "xcode_settings": {
-                'OTHER_CFLAGS': [ '<!@(<(julia_config) --cflags)'],
+                'OTHER_CFLAGS': [ '<!@(<(julia_config) --cflags)', '-Werror -Wall'],
                 'OTHER_LDFLAGS': ['<!@(<(julia_config) --ldflags)'],
             }
         },

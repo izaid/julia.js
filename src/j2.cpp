@@ -26,7 +26,9 @@ v8::Local<v8::Object> NewTypedArray(v8::Isolate *isolate, const char *name,
   v8::Local<v8::Value> args[3] = {buffer,
                                   v8::Integer::New(isolate, byte_offset),
                                   v8::Integer::New(isolate, length)};
-  return constructor->NewInstance(3, args);
+  return constructor
+      ->NewInstance(v8::Isolate::GetCurrent()->GetCurrentContext(), 3, args)
+      .ToLocalChecked();
 }
 
 bool j2::TranslateJuliaException(v8::Isolate *isolate) {
@@ -137,7 +139,10 @@ jl_value_t *j2::FromJavaScriptNull(v8::Local<v8::Value> value) {
 }
 
 jl_value_t *j2::FromJavaScriptNumber(v8::Local<v8::Value> value) {
-  return jl_box_float64(value->ToNumber()->Value());
+  return jl_box_float64(
+      value->ToNumber(v8::Isolate::GetCurrent()->GetCurrentContext())
+          .ToLocalChecked()
+          ->Value());
 }
 
 jl_value_t *j2::FromJavaScriptObject(v8::Isolate *isolate,
@@ -306,7 +311,7 @@ void JuliaCall(const v8::FunctionCallbackInfo<v8::Value> &info) {
   jl_value_t *value = static_cast<jl_value_t *>(external->Value());
 
   jl_svec_t *args = jl_alloc_svec(info.Length());
-  for (int i = 0; i < jl_svec_len(args); ++i) {
+  for (size_t i = 0; i < jl_svec_len(args); ++i) {
     jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
 
     jl_svec_data(args)[i] = value;
@@ -326,7 +331,7 @@ void JuliaCall2(const v8::FunctionCallbackInfo<v8::Value> &info) {
       static_cast<jl_value_t *>(wrapper.As<v8::External>()->Value());
 
   jl_svec_t *args = jl_alloc_svec(info.Length());
-  for (int i = 0; i < jl_svec_len(args); ++i) {
+  for (size_t i = 0; i < jl_svec_len(args); ++i) {
     jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
 
     jl_svec_data(args)[i] = value;
@@ -351,7 +356,7 @@ void JuliaConstruct(const v8::FunctionCallbackInfo<v8::Value> &info) {
   jl_value_t *value = static_cast<jl_value_t *>(external->Value());
 
   jl_svec_t *args = jl_alloc_svec(info.Length());
-  for (int i = 0; i < jl_svec_len(args); ++i) {
+  for (size_t i = 0; i < jl_svec_len(args); ++i) {
     jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
 
     jl_svec_data(args)[i] = value;
@@ -395,7 +400,7 @@ void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
   size_t length = jl_field_count(type);
 
   v8::Local<v8::Array> properties = v8::Array::New(info.GetIsolate(), length);
-  for (int i = 0; i < length; ++i) {
+  for (size_t i = 0; i < length; ++i) {
     jl_sym_t *name = jl_field_name(type, i);
     properties->Set(
         v8::Number::New(isolate, i),
@@ -646,23 +651,23 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
     return FromJuliaType(isolate, value);
   }
 
-//  if (jl_subtype(value, reinterpret_cast<jl_value_t *>(jl_function_type), 1)) {
-  //  return FromJuliaFunction(isolate, value);
+  //  if (jl_subtype(value, reinterpret_cast<jl_value_t *>(jl_function_type),
+  //  1)) { return FromJuliaFunction(isolate, value);
   //}
 
   if (jl_is_module(value)) {
     return FromJuliaModule(isolate, value);
   }
 
-/*
-  jl_value_t *datatype = jl_eval_string("JavaScriptValue");
-  if (jl_subtype(value, datatype, 1)) {
-    v8::Persistent<v8::Value> *val =
-        (v8::Persistent<v8::Value> *)jl_unbox_voidpointer(
-            jl_get_nth_field(value, 0));
-    return val->Get(isolate);
-  }
-*/
+  /*
+    jl_value_t *datatype = jl_eval_string("JavaScriptValue");
+    if (jl_subtype(value, datatype, 1)) {
+      v8::Persistent<v8::Value> *val =
+          (v8::Persistent<v8::Value> *)jl_unbox_voidpointer(
+              jl_get_nth_field(value, 0));
+      return val->Get(isolate);
+    }
+  */
 
   if (!exact) {
     if (jl_is_int32(value)) {
