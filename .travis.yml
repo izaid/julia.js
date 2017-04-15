@@ -1,5 +1,4 @@
-dist: xenial
-sudo: false
+dist: trusty
 
 #
 # julia -e 'print(joinpath(JULIA_HOME,Base.DATAROOTDIR,"julia"))'
