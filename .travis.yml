@@ -23,7 +23,6 @@ matrix:
         - export CC="gcc-4.9"
         - export CXX="g++-4.9"
         - cc --version
-        - CURL_USER_AGENT="Travis-CI $(curl --version | head -n 1)"
         - mkdir -p ~/julia
         - curl -O 'https://s3.amazonaws.com/julialang/bin/linux/x64/0.5/julia-0.5-latest-linux-x86_64.tar.gz'
         - tar -xzf julia-0.5-latest-linux-x86_64.tar.gz
