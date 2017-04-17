@@ -5,20 +5,16 @@ dist: trusty
 
 language: node_js
 
-node_js:
-  - "6"
-
 cache:
   apt: true
   directories:
     - $HOME/julia
 
-before_script:
-  - julia -e 'versioninfo()'
-
 matrix:
   include:
-    - addons:
+    - node_js:
+        - "6"
+      addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
@@ -32,13 +28,17 @@ matrix:
         - curl -O 'https://s3.amazonaws.com/julialang/bin/linux/x64/0.5/julia-0.5-latest-linux-x86_64.tar.gz'
         - tar -xzf julia-0.5-latest-linux-x86_64.tar.gz
         - export PATH="${PATH}:${HOME}/julia/bin"
+        - julia -e 'versioninfo()'
         - export LD_PRELOAD=/home/travis/julia/lib/libjulia.so
     - os: osx
+      node_js:
+        - "6"
       before_install:
         - curl -O 'https://s3.amazonaws.com/julialang/bin/osx/x64/0.5/julia-0.5.1-osx10.7+.dmg'
         - hdiutil mount julia-0.5.1-osx10.7+.dmg
         - cp -Ra /Volumes/Julia-0.5.1/*.app/Contents/Resources/julia ~
         - export PATH="${PATH}:${HOME}/julia/bin"
+        - julia -e 'versioninfo()'
 
 notifications:
   email: false
