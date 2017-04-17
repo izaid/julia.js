@@ -28,6 +28,7 @@ matrix:
         - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 50
         - curl -O 'https://s3.amazonaws.com/julialang/bin/linux/x64/0.5/julia-0.5-latest-linux-x86_64.tar.gz'
         - tar -xzf julia-0.5-latest-linux-x86_64.tar.gz
+        - ls
         - export PATH="${PATH}:${HOME}/julia/bin"
         - export LD_PRELOAD=/home/travis/julia/lib/libjulia.so
         - julia -e 'versioninfo()'
