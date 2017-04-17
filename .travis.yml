@@ -24,8 +24,8 @@ matrix:
       before_install:
 #        - export CC="gcc-4.9"
 #        - export CXX="g++-4.9"
-        - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 50
-        - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 50
+        - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 50
+        - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 50
         - curl -O 'https://s3.amazonaws.com/julialang/bin/linux/x64/0.5/julia-0.5-latest-linux-x86_64.tar.gz'
         - tar -xzf julia-0.5-latest-linux-x86_64.tar.gz
         - export PATH="${PATH}:${HOME}/julia/bin"
