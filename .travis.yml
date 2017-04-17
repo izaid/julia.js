@@ -35,11 +35,9 @@ matrix:
         - "6"
       before_install:
         - CURL_USER_AGENT="Travis-CI $(curl --version | head -n 1)"
-        - mkdir -p ~/julia
         - curl -O 'https://s3.amazonaws.com/julialang/bin/osx/x64/0.5/julia-0.5.1-osx10.7+.dmg'
         - hdiutil mount julia-0.5.1-osx10.7+.dmg
         - cp -Ra /Volumes/Julia-0.5.1/*.app/Contents/Resources/julia ~
-#        - ln -s ~/julia/bin/julia /usr/local/bin/julia
         - export PATH="${PATH}:${HOME}/julia/bin"
         - julia -e 'versioninfo()'
 
