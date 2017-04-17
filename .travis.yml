@@ -32,8 +32,8 @@ matrix:
         - ls
         - ls julia/
         - ls julia/lib/
-        - export PATH="${PATH}:${HOME}/julia/bin"
-        - export LD_PRELOAD=/home/travis/julia/lib/libjulia.so
+        - export PATH="$PATH:$HOME/build/julia/bin"
+        - export LD_PRELOAD=$HOME/build/julia/lib/libjulia.so
         - julia -e 'versioninfo()'
     - os: osx
       node_js:
@@ -41,8 +41,9 @@ matrix:
       before_install:
         - curl -O 'https://s3.amazonaws.com/julialang/bin/osx/x64/0.5/julia-0.5.1-osx10.7+.dmg'
         - hdiutil mount julia-0.5.1-osx10.7+.dmg
+        - pwd
         - cp -Ra /Volumes/Julia-0.5.1/*.app/Contents/Resources/julia ~
-        - export PATH="${PATH}:${HOME}/julia/bin"
+        - export PATH="$PATH:$HOME/julia/bin"
         - julia -e 'versioninfo()'
 
 notifications:
