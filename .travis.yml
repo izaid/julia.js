@@ -3,10 +3,11 @@ dist: trusty
 #
 # julia -e 'print(joinpath(JULIA_HOME,Base.DATAROOTDIR,"julia"))'
 
+language: node_js
+
 matrix:
   include:
-    - language: node_js
-      node_js:
+    - node_js:
         - "6"
       addons:
         apt:
@@ -23,14 +24,12 @@ matrix:
         - export CC="gcc-4.9"
         - export CXX="g++-4.9"
         - cc --version
-#        - mkdir -p ~/julia
         - curl -O 'https://s3.amazonaws.com/julialang/bin/linux/x64/0.5/julia-0.5-latest-linux-x86_64.tar.gz'
         - tar -xzf julia-0.5-latest-linux-x86_64.tar.gz
         - export PATH="${PATH}:${HOME}/julia/bin"
         - julia -e 'versioninfo()'
         - export LD_PRELOAD=/home/travis/julia/lib/libjulia.so
-    - language: node_js
-      os: osx
+    - os: osx
       node_js:
         - "6"
       before_install:
