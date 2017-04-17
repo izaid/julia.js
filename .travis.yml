@@ -5,6 +5,11 @@ dist: trusty
 
 language: node_js
 
+cache:
+  apt: true
+  directories:
+    - $HOME/julia
+
 matrix:
   include:
     - node_js:
@@ -16,10 +21,6 @@ matrix:
           packages:
             - gcc-4.9
             - g++-4.9
-      cache:
-        apt: true
-        directories:
-          - $HOME/julia
       before_install:
         - export CC="gcc-4.9"
         - export CXX="g++-4.9"
