@@ -27,13 +27,14 @@ matrix:
         - curl -O 'https://s3.amazonaws.com/julialang/bin/linux/x64/0.5/julia-0.5.1-linux-x86_64.tar.gz'
         - mkdir -p $HOME/julia
         - tar -xzf julia-0.5.1-linux-x86_64.tar.gz -C $HOME/julia --strip-components=1
-        - export PATH="$PATH:$HOME/julia/bin"
         - export LD_PRELOAD=$HOME/julia/lib/libjulia.so
+        - export PATH="$PATH:$HOME/julia/bin"
         - julia -e 'versioninfo()'
     - os: osx
       node_js:
         - "6"
       before_install:
+        - rvm get head
         - curl -O 'https://s3.amazonaws.com/julialang/bin/osx/x64/0.5/julia-0.5.1-osx10.7+.dmg'
         - hdiutil mount julia-0.5.1-osx10.7+.dmg
         - cp -Ra /Volumes/Julia-0.5.1/*.app/Contents/Resources/julia $HOME
