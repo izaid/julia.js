@@ -1,5 +1,9 @@
 #include <map>
 #include <string>
+#include <iostream>
+#include <utility>
+#include <tuple>
+ 
 
 #include <node.h>
 #include <node_buffer.h>
