@@ -29,6 +29,9 @@ matrix:
         - export PATH="${PATH}:${HOME}/julia/bin"
         - julia -e 'versioninfo()'
         - export LD_PRELOAD=/home/travis/julia/lib/libjulia.so
-
+    - language: node_js
+      os: osx
+      node_js:
+        - "6"
 notifications:
   email: false
