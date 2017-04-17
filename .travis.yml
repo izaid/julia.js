@@ -35,8 +35,9 @@ matrix:
         - "6"
       before_install:
         - rvm get head
-        - curl -O 'https://s3.amazonaws.com/julialang/bin/osx/x64/0.5/julia-0.5.1-osx10.7+.dmg'
-        - hdiutil mount julia-0.5.1-osx10.7+.dmg
+        - curl -O 'https://s3.amazonaws.com/julialang/bin/osx/x64/0.5/julia-0.5-latest-osx10.7+.dmg'
+        - hdiutil mount julia-0.5-latest-osx10.7+.dmg
+        - ls /Volumes/
         - cp -Ra /Volumes/Julia-0.5.1/*.app/Contents/Resources/julia $HOME
         - export PATH="$PATH:$HOME/julia/bin"
         - julia -e 'versioninfo()'
