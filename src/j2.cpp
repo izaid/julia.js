@@ -1,6 +1,5 @@
 #include <map>
 #include <string>
-#include <unordered_map>
 
 #include <node.h>
 #include <node_buffer.h>
@@ -269,7 +268,7 @@ v8::Local<v8::Value> j2::FromJuliaTuple(v8::Isolate *isolate,
 
 v8::Local<v8::Value> j2::FromJuliaArray(v8::Isolate *isolate,
                                         jl_value_t *value) {
-  static const std::unordered_map<jl_datatype_t *, const char *> types{
+  static const std::map<jl_datatype_t *, const char *> types{
       {jl_uint8_type, "Uint8Array"},
       {jl_uint16_type, "Uint16Array"},
       {jl_float32_type, "Float32Array"},
