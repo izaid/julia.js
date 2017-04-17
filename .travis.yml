@@ -31,6 +31,7 @@ matrix:
         - export LD_PRELOAD=/home/travis/julia/lib/libjulia.so
     - language: node_js
       os: osx
+      osx_image: xcode6.4
       node_js:
         - "6"
       before_install:
