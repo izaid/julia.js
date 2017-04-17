@@ -3,31 +3,32 @@ dist: trusty
 #
 # julia -e 'print(joinpath(JULIA_HOME,Base.DATAROOTDIR,"julia"))'
 
-language: node_js
-node_js:
-  - "6"
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - gcc-4.9
-      - g++-4.9
-cache:
-  apt: true
-  directories:
-    - $HOME/julia
-
-before_install:
-  - export CC="gcc-4.9"
-  - export CXX="g++-4.9"
-  - cc --version
-  - CURL_USER_AGENT="Travis-CI $(curl --version | head -n 1)"
-  - mkdir -p ~/julia
-  - curl -A "$CURL_USER_AGENT" -s -L --retry 7 'https://s3.amazonaws.com/julialang/bin/linux/x64/0.5/julia-0.5-latest-linux-x86_64.tar.gz' | tar -C ~/julia -x -z --strip-components=1 -f -
-  - export PATH="${PATH}:${HOME}/julia/bin"
-  - julia -e 'versioninfo()'
-  - export LD_PRELOAD=/home/travis/julia/lib/libjulia.so
+matrix:
+  include:
+    - language: node_js
+      node_js:
+        - "6"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-4.9
+            - g++-4.9
+      cache:
+        apt: true
+        directories:
+          - $HOME/julia
+      before_install:
+        - export CC="gcc-4.9"
+        - export CXX="g++-4.9"
+        - cc --version
+        - CURL_USER_AGENT="Travis-CI $(curl --version | head -n 1)"
+        - mkdir -p ~/julia
+        - curl -A "$CURL_USER_AGENT" -s -L --retry 7 'https://s3.amazonaws.com/julialang/bin/linux/x64/0.5/julia-0.5-latest-linux-x86_64.tar.gz' | tar -C ~/julia -x -z --strip-components=1 -f -
+        - export PATH="${PATH}:${HOME}/julia/bin"
+        - julia -e 'versioninfo()'
+        - export LD_PRELOAD=/home/travis/julia/lib/libjulia.so
 
 notifications:
   email: false
