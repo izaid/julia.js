@@ -9,7 +9,7 @@
             'cflags': ['<!@(<(julia_config) --cflags)', '-Werror -Wall'],
             'ldflags': ['<!@(<(julia_config) --ldflags)'],
             "xcode_settings": {
-                'MACOSX_DEPLOYMENT_TARGET': '10.8',
+                'MACOSX_DEPLOYMENT_TARGET': '10.9',
                 'OTHER_CFLAGS': [ '<!@(<(julia_config) --cflags)', '-Werror -Wall'],
                 'OTHER_LDFLAGS': ['<!@(<(julia_config) --ldflags)'],
             }
