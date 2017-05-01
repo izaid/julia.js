@@ -454,11 +454,9 @@ static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
 }
 
 v8::Local<v8::FunctionTemplate> j2::NewJavaScriptType(v8::Isolate *isolate,
-                                                      jl_datatype_t *) {
-  // v8::External::New(isolate, type)
-
-  v8::Local<v8::FunctionTemplate> constructor =
-      v8::FunctionTemplate::New(isolate, JuliaConstruct);
+                                                      jl_datatype_t *type) {
+  v8::Local<v8::FunctionTemplate> constructor = v8::FunctionTemplate::New(
+      isolate, JuliaConstruct, v8::External::New(isolate, type));
   constructor->SetClassName(v8::String::NewFromUtf8(isolate, "JuliaValue"));
 
   constructor->PrototypeTemplate()->Set(
@@ -592,7 +590,7 @@ v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
   jl_static_show(jl_stdout_stream(), jl_typeof(value));
   printf("\n");
 
-  JL_GC_PUSH3(&push, &shared, &value);
+  JL_GC_PUSH1(&value);
 
   v8::Local<v8::FunctionTemplate> t = NewJavaScriptType(
       isolate, reinterpret_cast<jl_datatype_t *>(jl_typeof(value)));
