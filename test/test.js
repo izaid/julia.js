@@ -2,9 +2,8 @@ var assert = require('assert');
 
 var Julia = require('../julia');
 
-after(function() {
-    global.gc();
-});
+//after(function() {
+//});
 
 describe("Julia", () => {
     it("Exception", () => {
@@ -119,6 +118,10 @@ describe("Julia", () => {
             Julia.eval("rand(500, 500)");
         }
     }).timeout(10000);
+
+    it("GarbageCollection", () => {
+        global.gc();
+    });
 
     /*
     it("String", () => {
