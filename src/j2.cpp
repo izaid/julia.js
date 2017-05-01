@@ -432,17 +432,21 @@ v8::Local<v8::Value> j2::FromJuliaType(v8::Isolate *isolate,
       ->GetFunction();
 }
 
-/*
 static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  static jl_value_t *getindex = jl_get_function(jl_main_module, "getindex");
+  assert(getindex != nullptr);
+
+  static jl_value_t *shared = jl_get_function(j2::js_module, "SHARED");
+  assert(shared != nullptr);
+
   v8::Isolate *isolate = info.GetIsolate();
-  //  jl_value_t *value = static_cast<jl_value_t *>(
-  //    info.This()->GetInternalField(0).As<v8::External>()->Value());
+
+  uintptr_t id = reinterpret_cast<uintptr_t>(info.This()->GetInternalField(0).As<v8::External>()->Value());
+  jl_value_t *value = jl_call2(getindex, shared, jl_box_uint64(id));
 
   v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-  res.Set(v8::Number::New(isolate, 0.0));
-  //  res.Set(j2::FromJuliaValue(isolate, value, false));
+  res.Set(j2::FromJuliaValue(isolate, value, false));
 }
-*/
 
 v8::Local<v8::FunctionTemplate> j2::NewJavaScriptType(v8::Isolate *isolate,
                                                       jl_datatype_t *) {
@@ -451,9 +455,9 @@ v8::Local<v8::FunctionTemplate> j2::NewJavaScriptType(v8::Isolate *isolate,
       v8::FunctionTemplate::New(isolate);
   //  constructor->SetClassName(v8::String::NewFromUtf8(isolate, "JuliaValue"));
 
-  //  constructor->PrototypeTemplate()->Set(
-  //    v8::String::NewFromUtf8(isolate, "valueOf"),
-  //  v8::FunctionTemplate::New(isolate, ValueOfCallback));
+  constructor->PrototypeTemplate()->Set(
+      v8::String::NewFromUtf8(isolate, "valueOf"),
+      v8::FunctionTemplate::New(isolate, ValueOfCallback));
 
   v8::Local<v8::ObjectTemplate> instance = constructor->InstanceTemplate();
   instance->SetInternalFieldCount(1);
@@ -590,7 +594,7 @@ v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
   //  }
 
   v8::Local<v8::Object> js_value = t->InstanceTemplate()->NewInstance();
-  js_value->SetInternalField(0, v8::Number::New(isolate, id));
+  js_value->SetInternalField(0, v8::External::New(isolate, reinterpret_cast<void *>(id)));
 
   auto p =
       Persistents.emplace(std::piecewise_construct, std::forward_as_tuple(id),
@@ -705,35 +709,39 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
     }
   */
 
-  /*
-    if (!exact) {
-      if (jl_is_int32(value)) {
-        return FromJuliaInt32(isolate, value);
-      }
+  if (!exact) {
+    /*
+          if (jl_is_int32(value)) {
+            return FromJuliaInt32(isolate, value);
+          }
+    */
 
-      if (jl_is_float32(value)) {
-        return FromJuliaFloat32(isolate, value);
-      }
+    if (jl_is_float32(value)) {
+      JL_GC_POP();
 
-      if (jl_is_tuple(value)) {
-        return FromJuliaTuple(isolate, value);
-      }
-
-      if (jl_is_array(value)) {
-        return FromJuliaArray(isolate, value);
-      }
-
-      jl_value_t *type = jl_typeof(value);
-      v8::Local<v8::Object> obj = v8::Object::New(isolate);
-      for (size_t i = 0; i < jl_field_count(type); ++i) {
-        obj->Set(v8::String::NewFromUtf8(isolate,
-                                         jl_symbol_name(jl_field_name(type,
-    i))), FromJuliaValue(isolate, jl_get_nth_field(value, i), false));
-      }
-
-      return obj;
+      return FromJuliaFloat32(isolate, value);
     }
-  */
+
+    /*
+          if (jl_is_tuple(value)) {
+            return FromJuliaTuple(isolate, value);
+          }
+
+          if (jl_is_array(value)) {
+            return FromJuliaArray(isolate, value);
+          }
+
+          jl_value_t *type = jl_typeof(value);
+          v8::Local<v8::Object> obj = v8::Object::New(isolate);
+          for (size_t i = 0; i < jl_field_count(type); ++i) {
+            obj->Set(v8::String::NewFromUtf8(isolate,
+                                             jl_symbol_name(jl_field_name(type,
+        i))), FromJuliaValue(isolate, jl_get_nth_field(value, i), false));
+          }
+
+          return obj;
+      */
+  }
 
   //  auto it = Persistents.find(value);
   // if (it != Persistents.end()) {
