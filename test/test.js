@@ -110,12 +110,13 @@ describe("Julia", () => {
     });
 */
 
-    it("GarbageCollection", () => {
+    it("Stress", () => {
         for (let i = 0; i < 500; ++i) {
             Julia.eval("rand(500, 500)");
         }
-        global.gc();
     }).timeout(10000);
+
+    global.gc();
 
     /*
     it("String", () => {
