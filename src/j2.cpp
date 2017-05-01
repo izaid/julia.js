@@ -619,7 +619,9 @@ v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
                      v8::WeakCallbackType::kParameter);
 
   jl_call2(push, shared, value);
-  //  TranslateJuliaException(isolate);
+  if (TranslateJuliaException(isolate)) {
+    isolate->TerminateExecution();
+  }
 
   //  isolate->AdjustAmountOfExternalAllocatedMemory(
   //    jl_unbox_int64(jl_call1(size, value)));
@@ -650,7 +652,7 @@ void j2::PopJuliaValue(v8::Isolate *isolate, jl_value_t *value) {
 
   jl_call2(pop, shared, value);
   if (TranslateJuliaException(isolate)) {
-    return;
+    isolate->TerminateExecution();
   }
 
   //  isolate->AdjustAmountOfExternalAllocatedMemory(
