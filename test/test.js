@@ -111,7 +111,9 @@ describe("Julia", () => {
 */
 
     it("GarbageCollection", () => {
-        Julia.eval("rand(500, 500)");
+        for (let i = 0; i < 500; ++i) {
+            Julia.eval("rand(500, 500)");
+        }
         global.gc();
     }).timeout(10000);
 

@@ -589,11 +589,6 @@ v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
   static jl_value_t *shared = jl_get_function(js_module, "SHARED");
   assert(shared != nullptr);
 
-  auto j = Persistents.find(value);
-  if (j != Persistents.end()) {
-    return j->second.Get(isolate);
-  }
-
   jl_static_show(jl_stdout_stream(), jl_typeof(value));
   printf("\n");
 
@@ -738,6 +733,11 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
     }
 
     return obj;
+  }
+
+  auto it = Persistents.find(value);
+  if (it != Persistents.end()) {
+    return it->second.Get(isolate);
   }
 
   return PushJuliaValue(isolate, value);
