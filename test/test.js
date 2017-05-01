@@ -71,6 +71,7 @@ describe("Julia", () => {
             im: 1.0
         }, Julia.eval("1.0f0im").valueOf());
     });
+*/
 
     it("Complex128", () => {
         assert.deepStrictEqual({
@@ -82,7 +83,6 @@ describe("Julia", () => {
             im: 1.0
         }, Julia.eval("1.0 + 1.0im").valueOf());
     });
-*/
 
     it("String", () => {
         assert.strictEqual("Hello, world!", Julia.eval("\"Hello, world!\""));
