@@ -7,36 +7,6 @@ var Julia = require('../julia');
 
 describe("Julia", () => {
     it("Exception", () => {
-
-        assert.throws(() => {
-            Julia.eval("assert(false)");
-        }, /^Error:/);
-
-        assert.throws(() => {
-            Julia.eval("[0, 1, 2, 3, 4][6]");
-        }, /^Error:/);
-
-        assert.throws(() => {
-            Julia.eval("sqrt(-1)");
-        }, /^Error:/);
-
-        assert.throws(() => {
-            Julia.eval("convert(Int, 0.5)");
-        }, /^Error:/);
-
-        assert.throws(() => {
-            Julia.eval("Dict(:x => 0, :y => 1)[:z]");
-        }, /^Error:/);
-
-        assert.throws(() => {
-            Julia.eval("0 + \"Hello, world!\"");
-        }, /^Error:/);
-
-        assert.throws(() => {
-            Julia.eval("x");
-        }, /^Error:/);
-
-        /*
         assert.throws(() => {
             Julia.eval("assert(false)");
         }, /^Error: AssertionError/);
@@ -64,7 +34,6 @@ describe("Julia", () => {
         assert.throws(() => {
             Julia.eval("x");
         }, /^Error: UndefVarError/);
-*/
     }).timeout(10000);
 
     it("Bool", () => {

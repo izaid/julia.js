@@ -11,8 +11,7 @@ module JavaScript
     const SHARED = Dict()
 
     function catch_message(e)
-        "dummy message"
-#        sprint(showerror, e, catch_backtrace())
+        sprint(showerror, e, catch_backtrace())
     end
 
 #    function convert(::Type{Array}, x::JavaScriptValue)
