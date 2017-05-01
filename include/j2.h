@@ -1,3 +1,5 @@
+#include <map>
+
 #include <julia.h>
 
 #include <v8.h>
@@ -5,6 +7,7 @@
 namespace j2 {
 
 extern jl_module_t *js_module;
+extern std::map<jl_value_t *, v8::UniquePersistent<v8::Object>> Persistents;
 
 v8::Local<v8::Value> PushJuliaValue(v8::Isolate *isolate, jl_value_t *value);
 void PopJuliaValue(v8::Isolate *isolate, jl_value_t *value);

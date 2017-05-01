@@ -1,19 +1,19 @@
-#include <map>
-#include <string>
+#include <cstdlib>
 #include <iostream>
-#include <utility>
+#include <string>
 #include <tuple>
- 
+#include <utility>
 
 #include <node.h>
 #include <node_buffer.h>
 
 #include <j2.h>
 
+std::map<jl_value_t *, v8::UniquePersistent<v8::Object>> j2::Persistents;
+
 namespace j2 {
 
 std::map<std::string, v8::UniquePersistent<v8::FunctionTemplate>> types;
-std::map<jl_value_t *, v8::UniquePersistent<v8::Object>> Persistents;
 
 } // namespace j2
 
@@ -37,6 +37,7 @@ v8::Local<v8::Object> NewTypedArray(v8::Isolate *isolate, const char *name,
 bool j2::TranslateJuliaException(v8::Isolate *isolate) {
   static jl_module_t *js_module = reinterpret_cast<jl_module_t *>(
       jl_get_global(jl_main_module, jl_symbol("JavaScript")));
+  assert(js_module != nullptr);
 
   static jl_value_t *catch_message =
       jl_get_function(js_module, "catch_message");
@@ -47,8 +48,19 @@ bool j2::TranslateJuliaException(v8::Isolate *isolate) {
     return false;
   }
 
-  isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(
-      isolate, jl_string_data(jl_call1(catch_message, e)))));
+  jl_value_t *s;
+  {
+    JL_GC_PUSH1(&catch_message);
+    s = jl_call1(catch_message, e);
+    JL_GC_POP();
+  }
+
+  JL_GC_PUSH1(&s);
+
+  isolate->ThrowException(v8::Exception::Error(
+      v8::String::NewFromUtf8(isolate, jl_string_data(s))));
+
+  JL_GC_POP();
 
   return true;
 }
@@ -416,33 +428,37 @@ void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
 
 v8::Local<v8::Value> j2::FromJuliaType(v8::Isolate *isolate,
                                        jl_value_t *value) {
-  if (reinterpret_cast<jl_datatype_t *>(value) == jl_bool_type) {
-    return isolate->GetCurrentContext()->Global()->Get(
-        v8::String::NewFromUtf8(isolate, "Boolean"));
-  }
+  /*
+    if (reinterpret_cast<jl_datatype_t *>(value) == jl_bool_type) {
+      return isolate->GetCurrentContext()->Global()->Get(
+          v8::String::NewFromUtf8(isolate, "Boolean"));
+    }
 
-  if (reinterpret_cast<jl_datatype_t *>(value) == jl_float64_type) {
-    return isolate->GetCurrentContext()->Global()->Get(
-        v8::String::NewFromUtf8(isolate, "Number"));
-  }
+    if (reinterpret_cast<jl_datatype_t *>(value) == jl_float64_type) {
+      return isolate->GetCurrentContext()->Global()->Get(
+          v8::String::NewFromUtf8(isolate, "Number"));
+    }
+  */
 
   return NewJavaScriptType(isolate, reinterpret_cast<jl_datatype_t *>(value))
       ->GetFunction();
 }
 
 static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-  jl_value_t *value = static_cast<jl_value_t *>(
-      info.This()->GetInternalField(0).As<v8::External>()->Value());
+  //  v8::Isolate *isolate = info.GetIsolate();
+  // jl_value_t *value = static_cast<jl_value_t *>(
+  //  info.This()->GetInternalField(0).As<v8::External>()->Value());
 
-  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-  res.Set(j2::FromJuliaValue(isolate, value, false));
+  //  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+  // res.Set(j2::FromJuliaValue(isolate, value, false));
 }
 
 v8::Local<v8::FunctionTemplate> j2::NewJavaScriptType(v8::Isolate *isolate,
-                                                      jl_datatype_t *type) {
-  v8::Local<v8::FunctionTemplate> constructor = v8::FunctionTemplate::New(
-      isolate, JuliaConstruct, v8::External::New(isolate, type));
+                                                      jl_datatype_t *) {
+  // v8::External::New(isolate, type)
+
+  v8::Local<v8::FunctionTemplate> constructor =
+      v8::FunctionTemplate::New(isolate, JuliaConstruct);
   constructor->SetClassName(v8::String::NewFromUtf8(isolate, "JuliaValue"));
 
   constructor->PrototypeTemplate()->Set(
@@ -451,12 +467,14 @@ v8::Local<v8::FunctionTemplate> j2::NewJavaScriptType(v8::Isolate *isolate,
 
   v8::Local<v8::ObjectTemplate> instance = constructor->InstanceTemplate();
   instance->SetInternalFieldCount(1);
-  instance->SetCallAsFunctionHandler(JuliaCall2);
+  // instance->SetCallAsFunctionHandler(JuliaCall2);
 
-  v8::NamedPropertyHandlerConfiguration handler;
-  handler.getter = ImportGet;
-  handler.enumerator = ImportEnumerator;
-  instance->SetHandler(handler);
+  /*
+    v8::NamedPropertyHandlerConfiguration handler;
+    handler.getter = ImportGet;
+    handler.enumerator = ImportEnumerator;
+    instance->SetHandler(handler);
+  */
 
   return constructor;
 }
@@ -560,6 +578,8 @@ v8::Local<v8::Value> j2::FromJuliaModule(v8::Isolate *isolate,
 
 v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
                                         jl_value_t *value) {
+  printf("PushJuliaValue\n");
+
   static jl_value_t *size = jl_get_function(jl_main_module, "sizeof");
   assert(size != nullptr);
 
@@ -569,8 +589,21 @@ v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
   static jl_value_t *shared = jl_get_function(js_module, "SHARED");
   assert(shared != nullptr);
 
+  auto j = Persistents.find(value);
+  if (j != Persistents.end()) {
+    return j->second.Get(isolate);
+  }
+
+  jl_static_show(jl_stdout_stream(), jl_typeof(value));
+  printf("\n");
+
+  JL_GC_PUSH3(&push, &shared, &value);
+
   v8::Local<v8::FunctionTemplate> t = NewJavaScriptType(
       isolate, reinterpret_cast<jl_datatype_t *>(jl_typeof(value)));
+  if (false) {
+    PushJuliaValue(isolate, jl_typeof(value));
+  }
 
   v8::Local<v8::Object> js_value = t->InstanceTemplate()->NewInstance();
   js_value->SetInternalField(0, v8::External::New(isolate, value));
@@ -590,13 +623,11 @@ v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
                      },
                      v8::WeakCallbackType::kParameter);
 
-  JL_GC_PUSH2(&shared, &value);
-
   jl_call2(push, shared, value);
-  TranslateJuliaException(isolate);
+  //  TranslateJuliaException(isolate);
 
-  isolate->AdjustAmountOfExternalAllocatedMemory(
-      jl_unbox_int64(jl_call1(size, value)));
+  //  isolate->AdjustAmountOfExternalAllocatedMemory(
+  //    jl_unbox_int64(jl_call1(size, value)));
 
   JL_GC_POP();
 
@@ -606,6 +637,8 @@ v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
 jl_module_t *j2::js_module;
 
 void j2::PopJuliaValue(v8::Isolate *isolate, jl_value_t *value) {
+  printf("PopJuliaValue\n");
+
   static jl_value_t *pop = jl_get_function(jl_main_module, "pop!");
   assert(pop != nullptr);
 
@@ -617,15 +650,22 @@ void j2::PopJuliaValue(v8::Isolate *isolate, jl_value_t *value) {
 
   JL_GC_PUSH2(&shared, &value);
 
-  jl_call2(pop, shared, value);
-  TranslateJuliaException(isolate);
+  jl_static_show(jl_stdout_stream(), jl_typeof(value));
+  printf("\n");
 
-  isolate->AdjustAmountOfExternalAllocatedMemory(
-      jl_unbox_int64(jl_call1(size, value)));
+  jl_call2(pop, shared, value);
+  if (TranslateJuliaException(isolate)) {
+    return;
+  }
+
+  //  isolate->AdjustAmountOfExternalAllocatedMemory(
+  //    jl_unbox_int64(jl_call1(size, value)));
 
   JL_GC_POP();
 
   Persistents.erase(value);
+
+  //  printf("PopJuliaValue (end)\n");
 }
 
 v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
