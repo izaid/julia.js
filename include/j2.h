@@ -33,8 +33,8 @@ v8::Local<v8::Value> FromJuliaModule(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaNothing(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaType(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaTuple(v8::Isolate *isolate, jl_value_t *value);
-
-v8::Local<v8::Value> TranslateJuliaValue(v8::Isolate *isolate, jl_value_t *value);
+v8::Local<v8::Value> TranslateJuliaValue(v8::Isolate *isolate,
+                                         jl_value_t *value, bool cast = false);
 
 v8::Local<v8::Value> CastJuliaValue(v8::Isolate *isolate, jl_value_t *value);
 

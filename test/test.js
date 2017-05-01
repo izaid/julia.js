@@ -64,14 +64,12 @@ describe("Julia", () => {
         assert.strictEqual(0.5, Julia.eval("0.5"));
     });
 
-    /*
     it("Complex64", () => {
         assert.deepStrictEqual({
             re: 0.0,
             im: 1.0
         }, Julia.eval("1.0f0im").valueOf());
     });
-*/
 
     it("Complex128", () => {
         assert.deepStrictEqual({
@@ -94,7 +92,7 @@ describe("Julia", () => {
     });
 
     it("Stress", () => {
-        for (let i = 0; i < 500; ++i) {
+        for (let i = 0; i < 1000; ++i) {
             Julia.eval("rand(500, 500)");
         }
     }).timeout(10000);

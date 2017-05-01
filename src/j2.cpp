@@ -446,7 +446,7 @@ static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
   jl_value_t *value = jl_call2(getindex, shared, jl_box_uint64(id));
 
   v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-  res.Set(j2::CastJuliaValue(isolate, value));
+  res.Set(j2::TranslateJuliaValue(isolate, value, true));
 }
 
 v8::Local<v8::FunctionTemplate> j2::NewJavaScriptType(v8::Isolate *isolate,
@@ -660,47 +660,8 @@ void j2::PopJuliaValue(v8::Isolate *isolate, uintptr_t id) {
   Persistents.erase(id);
 }
 
-v8::Local<v8::Value> j2::CastJuliaValue(v8::Isolate *isolate,
-                                        jl_value_t *value) {
-  JL_GC_PUSH1(&value);
-
-  if (jl_is_int32(value)) {
-    JL_GC_POP();
-
-    return FromJuliaInt32(isolate, value);
-  }
-
-  if (jl_is_float32(value)) {
-    JL_GC_POP();
-
-    return FromJuliaFloat32(isolate, value);
-  }
-
-  /*
-        if (jl_is_tuple(value)) {
-          return FromJuliaTuple(isolate, value);
-        }
-
-        if (jl_is_array(value)) {
-          return FromJuliaArray(isolate, value);
-        }
-    */
-
-  jl_value_t *type = jl_typeof(value);
-  v8::Local<v8::Object> obj = v8::Object::New(isolate);
-  for (size_t i = 0; i < jl_field_count(type); ++i) {
-    obj->Set(v8::String::NewFromUtf8(isolate,
-                                     jl_symbol_name(jl_field_name(type, i))),
-             TranslateJuliaValue(isolate, jl_get_nth_field(value, i)));
-  }
-
-  JL_GC_POP();
-
-  return obj;
-}
-
 v8::Local<v8::Value> j2::TranslateJuliaValue(v8::Isolate *isolate,
-                                             jl_value_t *value) {
+                                             jl_value_t *value, bool cast) {
   JL_GC_PUSH1(&value);
 
   if (jl_is_bool(value)) {
@@ -731,6 +692,42 @@ v8::Local<v8::Value> j2::TranslateJuliaValue(v8::Isolate *isolate,
     JL_GC_POP();
 
     return FromJuliaNothing(isolate, value);
+  }
+
+  if (cast) {
+    if (jl_is_int32(value)) {
+      JL_GC_POP();
+
+      return FromJuliaInt32(isolate, value);
+    }
+
+    if (jl_is_float32(value)) {
+      JL_GC_POP();
+
+      return FromJuliaFloat32(isolate, value);
+    }
+
+    /*
+          if (jl_is_tuple(value)) {
+            return FromJuliaTuple(isolate, value);
+          }
+
+          if (jl_is_array(value)) {
+            return FromJuliaArray(isolate, value);
+          }
+      */
+
+    jl_value_t *type = jl_typeof(value);
+    v8::Local<v8::Object> obj = v8::Object::New(isolate);
+    for (size_t i = 0; i < jl_field_count(type); ++i) {
+      obj->Set(v8::String::NewFromUtf8(isolate,
+                                       jl_symbol_name(jl_field_name(type, i))),
+               TranslateJuliaValue(isolate, jl_get_nth_field(value, i), true));
+    }
+
+    JL_GC_POP();
+
+    return obj;
   }
 
   /*
