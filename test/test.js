@@ -91,13 +91,6 @@ describe("Julia", () => {
         assert.strictEqual(null, Julia.eval("nothing"));
     });
 
-    it("Stress", () => {
-        for (let i = 0; i < 1000; ++i) {
-            Julia.eval("rand(500, 500)");
-        }
-    }).timeout(10000);
-
-    /*
     it("Tuple", () => {
         assert.deepStrictEqual([], Julia.eval("()").valueOf());
 
@@ -107,7 +100,12 @@ describe("Julia", () => {
             0, 1, 2, 3, 4
         ], Julia.eval("(0, 1, 2, 3, 4)").valueOf());
     });
-*/
+
+    it("Stress", () => {
+        for (let i = 0; i < 1000; ++i) {
+            Julia.eval("rand(500, 500)");
+        }
+    }).timeout(10000);
 
     /*
     it("Array", () => {
