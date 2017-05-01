@@ -3,6 +3,10 @@ var assert = require('assert');
 var Julia = require('../julia');
 
 after(function() {
+    for (let i = 0; i < 1000; ++i) {
+        Julia.eval("rand(500, 500)");
+    }
+
     global.gc();
 });
 
@@ -100,12 +104,6 @@ describe("Julia", () => {
             0, 1, 2, 3, 4
         ], Julia.eval("(0, 1, 2, 3, 4)").valueOf());
     });
-
-    it("Stress", () => {
-        for (let i = 0; i < 1000; ++i) {
-            Julia.eval("rand(500, 500)");
-        }
-    }).timeout(10000);
 
     /*
     it("Array", () => {
