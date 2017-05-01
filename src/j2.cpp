@@ -619,12 +619,13 @@ v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
                      v8::WeakCallbackType::kParameter);
 
   jl_call2(push, shared, value);
-  if (TranslateJuliaException(isolate)) {
-    isolate->TerminateExecution();
-  }
-
   isolate->AdjustAmountOfExternalAllocatedMemory(
       jl_unbox_int64(jl_call1(size, value)));
+
+  jl_value_t *e = jl_exception_occurred();
+  if (e != nullptr) {
+    isolate->TerminateExecution();
+  }
 
   JL_GC_POP();
 
@@ -645,24 +646,23 @@ void j2::PopJuliaValue(v8::Isolate *isolate, jl_value_t *value) {
   static jl_value_t *shared = jl_get_function(js_module, "SHARED");
   assert(shared != nullptr);
 
-  JL_GC_PUSH2(&shared, &value);
+  JL_GC_PUSH1(&value);
 
   jl_static_show(jl_stdout_stream(), jl_typeof(value));
   printf("\n");
 
   jl_call2(pop, shared, value);
-  if (TranslateJuliaException(isolate)) {
-    isolate->TerminateExecution();
-  }
-
   isolate->AdjustAmountOfExternalAllocatedMemory(
       jl_unbox_int64(jl_call1(size, value)));
+
+  jl_value_t *e = jl_exception_occurred();
+  if (e != nullptr) {
+    isolate->TerminateExecution();
+  }
 
   JL_GC_POP();
 
   Persistents.erase(value);
-
-  //  printf("PopJuliaValue (end)\n");
 }
 
 v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
