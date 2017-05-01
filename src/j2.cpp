@@ -428,29 +428,17 @@ void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
 
 v8::Local<v8::Value> j2::FromJuliaType(v8::Isolate *isolate,
                                        jl_value_t *value) {
-  /*
-    if (reinterpret_cast<jl_datatype_t *>(value) == jl_bool_type) {
-      return isolate->GetCurrentContext()->Global()->Get(
-          v8::String::NewFromUtf8(isolate, "Boolean"));
-    }
-
-    if (reinterpret_cast<jl_datatype_t *>(value) == jl_float64_type) {
-      return isolate->GetCurrentContext()->Global()->Get(
-          v8::String::NewFromUtf8(isolate, "Number"));
-    }
-  */
-
   return NewJavaScriptType(isolate, reinterpret_cast<jl_datatype_t *>(value))
       ->GetFunction();
 }
 
 static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  //  v8::Isolate *isolate = info.GetIsolate();
-  // jl_value_t *value = static_cast<jl_value_t *>(
-  //  info.This()->GetInternalField(0).As<v8::External>()->Value());
+  v8::Isolate *isolate = info.GetIsolate();
+  jl_value_t *value = static_cast<jl_value_t *>(
+      info.This()->GetInternalField(0).As<v8::External>()->Value());
 
-  //  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-  // res.Set(j2::FromJuliaValue(isolate, value, false));
+  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+  res.Set(j2::FromJuliaValue(isolate, value, false));
 }
 
 v8::Local<v8::FunctionTemplate> j2::NewJavaScriptType(v8::Isolate *isolate,
