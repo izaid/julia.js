@@ -114,7 +114,7 @@ describe("Julia", () => {
 */
 
     it("Stress", () => {
-        for (let i = 0; i < 2; ++i) {
+        for (let i = 0; i < 25; ++i) {
             Julia.eval("rand(500, 500)");
         }
     }).timeout(10000);
