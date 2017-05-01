@@ -735,10 +735,10 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
     return obj;
   }
 
-  auto it = Persistents.find(value);
-  if (it != Persistents.end()) {
-    return it->second.Get(isolate);
-  }
+//  auto it = Persistents.find(value);
+  //if (it != Persistents.end()) {
+    //return it->second.Get(isolate);
+//  }
 
   return PushJuliaValue(isolate, value);
 }
