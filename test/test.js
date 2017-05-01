@@ -41,10 +41,11 @@ describe("Julia", () => {
         assert.strictEqual(false, Julia.eval("false"));
     });
 
-    //    it("Int32", () => {
-    //      assert.strictEqual(0, Julia.eval("Int32(0)").valueOf());
-    //    assert.strictEqual(1, Julia.eval("Int32(1)").valueOf());
-    //    });
+    it("Int32", () => {
+        assert.strictEqual(0, Julia.eval("Int32(0)").valueOf());
+        assert.strictEqual(1, Julia.eval("Int32(1)").valueOf());
+        assert.strictEqual(1, Julia.eval("Int32(1)").valueOf());
+    });
 
     it("Int64", () => {
         assert.strictEqual(0, Julia.eval("Int64(0)"));

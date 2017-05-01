@@ -719,11 +719,11 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
   */
 
   if (!exact) {
-    /*
-          if (jl_is_int32(value)) {
-            return FromJuliaInt32(isolate, value);
-          }
-    */
+    if (jl_is_int32(value)) {
+      JL_GC_POP();
+
+      return FromJuliaInt32(isolate, value);
+    }
 
     if (jl_is_float32(value)) {
       JL_GC_POP();
