@@ -9,12 +9,12 @@ namespace j2 {
 extern jl_module_t *js_module;
 
 /**
-  * This is
-  */
-extern std::map<jl_value_t *, v8::UniquePersistent<v8::Object>> Persistents;
+ * This is
+ */
+extern std::map<uintptr_t, v8::UniquePersistent<v8::Object>> Persistents;
 
 v8::Local<v8::Value> PushJuliaValue(v8::Isolate *isolate, jl_value_t *value);
-void PopJuliaValue(v8::Isolate *isolate, jl_value_t *value);
+void PopJuliaValue(v8::Isolate *isolate, uintptr_t id);
 
 /**
  *
@@ -40,8 +40,8 @@ v8::Local<v8::FunctionTemplate> NewJavaScriptType(v8::Isolate *isolate,
                                                   jl_datatype_t *type);
 
 jl_value_t *FromJavaScriptArray(v8::Local<v8::Value> value);
-//jl_value_t *FromJavaScriptJuliaArrayDescriptor(v8::Isolate *isolate,
-  //                                             v8::Local<v8::Value> value);
+// jl_value_t *FromJavaScriptJuliaArrayDescriptor(v8::Isolate *isolate,
+//                                             v8::Local<v8::Value> value);
 jl_value_t *FromJavaScriptBoolean(v8::Local<v8::Value> value);
 jl_value_t *FromJavaScriptNull(v8::Local<v8::Value> value);
 jl_value_t *FromJavaScriptNumber(v8::Local<v8::Value> value);
@@ -66,4 +66,4 @@ extern "C" jl_value_t *UnboxJuliaValue(v8::Isolate *isolate,
                                        v8::Local<v8::Value> value);
 
 // From a JavaScriptValue to a more specific Julia type
-//extern "C" jl_value_t *ToJuliaArray(jl_value_t *value);
+// extern "C" jl_value_t *ToJuliaArray(jl_value_t *value);

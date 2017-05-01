@@ -84,8 +84,11 @@ describe("Julia", () => {
 
     it("Float32", () => {
         Julia.eval("0.0f0");
+        Julia.eval("0.5f0");
+        Julia.eval("rand(2500 * 2500)");
+
         //        assert.strictEqual(0.0, Julia.eval("0.0f0").valueOf());
-        //        assert.strictEqual(0.5, Julia.eval("0.5f0").valueOf());
+        //      assert.strictEqual(0.5, Julia.eval("0.5f0").valueOf());
     });
 
     it("Float64", () => {
@@ -114,7 +117,7 @@ describe("Julia", () => {
 */
 
     it("Stress", () => {
-        for (let i = 0; i < 25; ++i) {
+        for (let i = 0; i < 500; ++i) {
             Julia.eval("rand(500, 500)");
         }
     }).timeout(10000);

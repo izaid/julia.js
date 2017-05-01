@@ -9,7 +9,7 @@
 
 #include <j2.h>
 
-std::map<jl_value_t *, v8::UniquePersistent<v8::Object>> j2::Persistents;
+std::map<uintptr_t, v8::UniquePersistent<v8::Object>> j2::Persistents;
 
 namespace j2 {
 
@@ -432,24 +432,28 @@ v8::Local<v8::Value> j2::FromJuliaType(v8::Isolate *isolate,
       ->GetFunction();
 }
 
+/*
 static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
   v8::Isolate *isolate = info.GetIsolate();
-  jl_value_t *value = static_cast<jl_value_t *>(
-      info.This()->GetInternalField(0).As<v8::External>()->Value());
+  //  jl_value_t *value = static_cast<jl_value_t *>(
+  //    info.This()->GetInternalField(0).As<v8::External>()->Value());
 
   v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-  res.Set(j2::FromJuliaValue(isolate, value, false));
+  res.Set(v8::Number::New(isolate, 0.0));
+  //  res.Set(j2::FromJuliaValue(isolate, value, false));
 }
+*/
 
 v8::Local<v8::FunctionTemplate> j2::NewJavaScriptType(v8::Isolate *isolate,
-                                                      jl_datatype_t *type) {
-  v8::Local<v8::FunctionTemplate> constructor = v8::FunctionTemplate::New(
-      isolate, JuliaConstruct, v8::External::New(isolate, type));
-  constructor->SetClassName(v8::String::NewFromUtf8(isolate, "JuliaValue"));
+                                                      jl_datatype_t *) {
+  // JuliaConstruct, v8::External::New(isolate, type)
+  v8::Local<v8::FunctionTemplate> constructor =
+      v8::FunctionTemplate::New(isolate);
+  //  constructor->SetClassName(v8::String::NewFromUtf8(isolate, "JuliaValue"));
 
-  constructor->PrototypeTemplate()->Set(
-      v8::String::NewFromUtf8(isolate, "valueOf"),
-      v8::FunctionTemplate::New(isolate, ValueOfCallback));
+  //  constructor->PrototypeTemplate()->Set(
+  //    v8::String::NewFromUtf8(isolate, "valueOf"),
+  //  v8::FunctionTemplate::New(isolate, ValueOfCallback));
 
   v8::Local<v8::ObjectTemplate> instance = constructor->InstanceTemplate();
   instance->SetInternalFieldCount(1);
@@ -564,47 +568,48 @@ v8::Local<v8::Value> j2::FromJuliaModule(v8::Isolate *isolate,
 
 v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
                                         jl_value_t *value) {
-  printf("PushJuliaValue\n");
-
   static jl_value_t *size = jl_get_function(jl_main_module, "sizeof");
   assert(size != nullptr);
 
   static jl_value_t *push = jl_get_function(jl_main_module, "push!");
   assert(push != nullptr);
 
+  static jl_value_t *setindex = jl_get_function(jl_main_module, "setindex!");
+  assert(setindex != nullptr);
+
   static jl_value_t *shared = jl_get_function(js_module, "SHARED");
   assert(shared != nullptr);
 
-  jl_static_show(jl_stdout_stream(), jl_typeof(value));
-  printf("\n");
-
   JL_GC_PUSH1(&value);
 
-  v8::Local<v8::FunctionTemplate> t = NewJavaScriptType(
-      isolate, reinterpret_cast<jl_datatype_t *>(jl_typeof(value)));
-  if (false) {
-    PushJuliaValue(isolate, jl_typeof(value));
-  }
+  uintptr_t id = jl_object_id(value);
+
+  v8::Local<v8::FunctionTemplate> t = NewJavaScriptType(isolate, nullptr);
+  //  if (false) {
+  //  PushJuliaValue(isolate, jl_typeof(value));
+  //  }
 
   v8::Local<v8::Object> js_value = t->InstanceTemplate()->NewInstance();
-  js_value->SetInternalField(0, v8::External::New(isolate, value));
+  js_value->SetInternalField(0, v8::Number::New(isolate, id));
 
-  auto p = Persistents.emplace(std::piecewise_construct,
-                               std::forward_as_tuple(value),
-                               std::forward_as_tuple(isolate, js_value));
+  auto p =
+      Persistents.emplace(std::piecewise_construct, std::forward_as_tuple(id),
+                          std::forward_as_tuple(isolate, js_value));
   if (!p.second) {
     printf("COLLISION!\n");
   }
 
   auto it = p.first;
 
-  it->second.SetWeak(value,
-                     [](const v8::WeakCallbackInfo<jl_value_t> &data) -> void {
-                       PopJuliaValue(data.GetIsolate(), data.GetParameter());
+  it->second.SetWeak(reinterpret_cast<void *>(id),
+                     [](const v8::WeakCallbackInfo<void> &data) -> void {
+                       PopJuliaValue(
+                           data.GetIsolate(),
+                           reinterpret_cast<uintptr_t>(data.GetParameter()));
                      },
                      v8::WeakCallbackType::kParameter);
 
-  jl_call2(push, shared, value);
+  jl_call3(setindex, shared, value, jl_box_uint64(id));
   isolate->AdjustAmountOfExternalAllocatedMemory(
       jl_unbox_int64(jl_call1(size, value)));
 
@@ -620,9 +625,7 @@ v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
 
 jl_module_t *j2::js_module;
 
-void j2::PopJuliaValue(v8::Isolate *isolate, jl_value_t *value) {
-  printf("PopJuliaValue\n");
-
+void j2::PopJuliaValue(v8::Isolate *isolate, uintptr_t id) {
   static jl_value_t *pop = jl_get_function(jl_main_module, "pop!");
   assert(pop != nullptr);
 
@@ -632,12 +635,7 @@ void j2::PopJuliaValue(v8::Isolate *isolate, jl_value_t *value) {
   static jl_value_t *shared = jl_get_function(js_module, "SHARED");
   assert(shared != nullptr);
 
-  JL_GC_PUSH1(&value);
-
-  jl_static_show(jl_stdout_stream(), jl_typeof(value));
-  printf("\n");
-
-  jl_call2(pop, shared, value);
+  jl_value_t *value = jl_call2(pop, shared, jl_box_uint64(id));
   isolate->AdjustAmountOfExternalAllocatedMemory(
       jl_unbox_int64(jl_call1(size, value)));
 
@@ -646,44 +644,56 @@ void j2::PopJuliaValue(v8::Isolate *isolate, jl_value_t *value) {
     isolate->TerminateExecution();
   }
 
-  JL_GC_POP();
-
-  Persistents.erase(value);
+  Persistents.erase(id);
 }
 
 v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
                                         bool exact) {
+  JL_GC_PUSH1(&value);
+
   if (jl_is_bool(value)) {
+    JL_GC_POP();
+
     return FromJuliaBool(isolate, value);
   }
 
   if (jl_is_int64(value)) {
+    JL_GC_POP();
+
     return FromJuliaInt64(isolate, value);
   }
 
   if (jl_is_float64(value)) {
+    JL_GC_POP();
+
     return FromJuliaFloat64(isolate, value);
   }
 
-  if (jl_is_string(value)) {
-    return FromJuliaString(isolate, value);
-  }
+  /*
+    if (jl_is_string(value)) {
+      return FromJuliaString(isolate, value);
+    }
 
-  if (jl_is_nothing(value)) {
-    return FromJuliaNothing(isolate, value);
-  }
+    if (jl_is_nothing(value)) {
+      return FromJuliaNothing(isolate, value);
+    }
+  */
 
-  if (jl_is_datatype(value)) {
-    return FromJuliaType(isolate, value);
-  }
+  /*
+    if (jl_is_datatype(value)) {
+      return FromJuliaType(isolate, value);
+    }
+  */
 
   //  if (jl_subtype(value, reinterpret_cast<jl_value_t *>(jl_function_type),
   //  1)) { return FromJuliaFunction(isolate, value);
   //}
 
-  if (jl_is_module(value)) {
-    return FromJuliaModule(isolate, value);
-  }
+  /*
+    if (jl_is_module(value)) {
+      return FromJuliaModule(isolate, value);
+    }
+  */
 
   /*
     jl_value_t *datatype = jl_eval_string("JavaScriptValue");
@@ -695,38 +705,42 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
     }
   */
 
-  if (!exact) {
-    if (jl_is_int32(value)) {
-      return FromJuliaInt32(isolate, value);
+  /*
+    if (!exact) {
+      if (jl_is_int32(value)) {
+        return FromJuliaInt32(isolate, value);
+      }
+
+      if (jl_is_float32(value)) {
+        return FromJuliaFloat32(isolate, value);
+      }
+
+      if (jl_is_tuple(value)) {
+        return FromJuliaTuple(isolate, value);
+      }
+
+      if (jl_is_array(value)) {
+        return FromJuliaArray(isolate, value);
+      }
+
+      jl_value_t *type = jl_typeof(value);
+      v8::Local<v8::Object> obj = v8::Object::New(isolate);
+      for (size_t i = 0; i < jl_field_count(type); ++i) {
+        obj->Set(v8::String::NewFromUtf8(isolate,
+                                         jl_symbol_name(jl_field_name(type,
+    i))), FromJuliaValue(isolate, jl_get_nth_field(value, i), false));
+      }
+
+      return obj;
     }
+  */
 
-    if (jl_is_float32(value)) {
-      return FromJuliaFloat32(isolate, value);
-    }
+  //  auto it = Persistents.find(value);
+  // if (it != Persistents.end()) {
+  // return it->second.Get(isolate);
+  //  }
 
-    if (jl_is_tuple(value)) {
-      return FromJuliaTuple(isolate, value);
-    }
-
-    if (jl_is_array(value)) {
-      return FromJuliaArray(isolate, value);
-    }
-
-    jl_value_t *type = jl_typeof(value);
-    v8::Local<v8::Object> obj = v8::Object::New(isolate);
-    for (size_t i = 0; i < jl_field_count(type); ++i) {
-      obj->Set(v8::String::NewFromUtf8(isolate,
-                                       jl_symbol_name(jl_field_name(type, i))),
-               FromJuliaValue(isolate, jl_get_nth_field(value, i), false));
-    }
-
-    return obj;
-  }
-
-  auto it = Persistents.find(value);
-  if (it != Persistents.end()) {
-    return it->second.Get(isolate);
-  }
+  JL_GC_POP();
 
   return PushJuliaValue(isolate, value);
 }

@@ -8,7 +8,7 @@ module JavaScript
 #        val::Ptr{Void}
 #    end
 
-    const SHARED = Set()
+    const SHARED = Dict()
 
     function catch_message(e)
         "dummy message"
