@@ -441,7 +441,8 @@ static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
 
   v8::Isolate *isolate = info.GetIsolate();
 
-  uintptr_t id = reinterpret_cast<uintptr_t>(info.This()->GetInternalField(0).As<v8::External>()->Value());
+  uintptr_t id = reinterpret_cast<uintptr_t>(
+      info.This()->GetInternalField(0).As<v8::External>()->Value());
   jl_value_t *value = jl_call2(getindex, shared, jl_box_uint64(id));
 
   v8::ReturnValue<v8::Value> res = info.GetReturnValue();
@@ -588,13 +589,21 @@ v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
 
   uintptr_t id = jl_object_id(value);
 
+  auto jt = Persistents.find(id);
+  if (jt != Persistents.end()) {
+    JL_GC_POP();
+
+    return jt->second.Get(isolate);
+  }
+
   v8::Local<v8::FunctionTemplate> t = NewJavaScriptType(isolate, nullptr);
   //  if (false) {
   //  PushJuliaValue(isolate, jl_typeof(value));
   //  }
 
   v8::Local<v8::Object> js_value = t->InstanceTemplate()->NewInstance();
-  js_value->SetInternalField(0, v8::External::New(isolate, reinterpret_cast<void *>(id)));
+  js_value->SetInternalField(
+      0, v8::External::New(isolate, reinterpret_cast<void *>(id)));
 
   auto p =
       Persistents.emplace(std::piecewise_construct, std::forward_as_tuple(id),
@@ -742,11 +751,6 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
           return obj;
       */
   }
-
-  //  auto it = Persistents.find(value);
-  // if (it != Persistents.end()) {
-  // return it->second.Get(isolate);
-  //  }
 
   JL_GC_POP();
 

@@ -54,6 +54,7 @@ describe("Julia", () => {
     it("Float32", () => {
         assert.strictEqual(0.0, Julia.eval("0.0f0").valueOf());
         assert.strictEqual(0.5, Julia.eval("0.5f0").valueOf());
+        assert.strictEqual(0.5, Julia.eval("0.5f0").valueOf());
     });
 
     it("Float64", () => {
