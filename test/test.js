@@ -114,9 +114,9 @@ describe("Julia", () => {
 */
 
     it("Stress", () => {
-        for (let i = 0; i < 500; ++i) {
-            Julia.eval("rand(500, 500)");
-        }
+        //        for (let i = 0; i < 500; ++i) {
+        Julia.eval("rand(500, 500)");
+        //    }
     }).timeout(10000);
 
     it("GarbageCollection", () => {
