@@ -84,13 +84,6 @@ describe("Julia", () => {
     });
 */
 
-    it("Stress", () => {
-        for (let i = 0; i < 500; ++i) {
-            Julia.eval("rand(500, 500)");
-        }
-    }).timeout(10000);
-
-    /*
     it("String", () => {
         assert.strictEqual("Hello, world!", Julia.eval("\"Hello, world!\""));
         assert.notStrictEqual("Hello, world!", Julia.eval("\"Hello, wo\""));
@@ -100,6 +93,13 @@ describe("Julia", () => {
         assert.strictEqual(null, Julia.eval("nothing"));
     });
 
+    it("Stress", () => {
+        for (let i = 0; i < 500; ++i) {
+            Julia.eval("rand(500, 500)");
+        }
+    }).timeout(10000);
+
+    /*
     it("Tuple", () => {
         assert.deepStrictEqual([], Julia.eval("()").valueOf());
 

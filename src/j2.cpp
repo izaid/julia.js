@@ -682,15 +682,17 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
     return FromJuliaFloat64(isolate, value);
   }
 
-  /*
-    if (jl_is_string(value)) {
-      return FromJuliaString(isolate, value);
-    }
+  if (jl_is_string(value)) {
+    JL_GC_POP();
 
-    if (jl_is_nothing(value)) {
-      return FromJuliaNothing(isolate, value);
-    }
-  */
+    return FromJuliaString(isolate, value);
+  }
+
+  if (jl_is_nothing(value)) {
+    JL_GC_POP();
+
+    return FromJuliaNothing(isolate, value);
+  }
 
   /*
     if (jl_is_datatype(value)) {
