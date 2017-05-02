@@ -713,11 +713,11 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
       return FromJuliaTuple(isolate, value);
     }
 
-    /*
-          if (jl_is_array(value)) {
-            return FromJuliaArray(isolate, value);
-          }
-      */
+    if (jl_is_array(value)) {
+      JL_GC_POP();
+
+      return FromJuliaArray(isolate, value);
+    }
 
     jl_value_t *type = jl_typeof(value);
     v8::Local<v8::Object> obj = v8::Object::New(isolate);

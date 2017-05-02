@@ -101,13 +101,6 @@ describe("Julia", () => {
         ], Julia.eval("(0, 1, 2, 3, 4)").valueOf());
     });
 
-    it("Stress", () => {
-        for (let i = 0; i < 1000; ++i) {
-            Julia.eval("rand(500, 500)");
-        }
-    }).timeout(10000);
-
-    /*
     it("Array", () => {
         assert.deepEqual({
             dims: [5],
@@ -120,7 +113,12 @@ describe("Julia", () => {
             data: new Float32Array([0, 1, 2, 3])
         }, Julia.eval("[[0.0f0, 1.0f0] [2.0f0, 3.0f0]]").valueOf());
     }).timeout(10000);
-*/
+
+    it("Stress", () => {
+        for (let i = 0; i < 1000; ++i) {
+            Julia.eval("rand(500, 500)");
+        }
+    }).timeout(10000);
 
     /*
     it("Function", () => {
