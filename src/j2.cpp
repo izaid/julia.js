@@ -9,7 +9,9 @@
 
 #include <j2.h>
 
-std::map<uintptr_t, v8::UniquePersistent<v8::Value>> j2::Persistents;
+std::map<uintptr_t, v8::UniquePersistent<v8::FunctionTemplate>>
+    j2::PersistentTemplates;
+std::map<uintptr_t, v8::UniquePersistent<v8::Value>> j2::PersistentValues;
 
 v8::Local<v8::Object> NewTypedArray(v8::Isolate *isolate, const char *name,
                                     v8::Local<v8::Value> buffer,
@@ -582,8 +584,8 @@ v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
 
   uintptr_t id = jl_object_id(value);
 
-  auto jt = Persistents.find(id);
-  if (jt != Persistents.end()) {
+  auto jt = PersistentValues.find(id);
+  if (jt != PersistentValues.end()) {
     JL_GC_POP();
 
     return jt->second.Get(isolate);
@@ -599,9 +601,9 @@ v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
   js_value->SetInternalField(
       0, v8::External::New(isolate, reinterpret_cast<void *>(id)));
 
-  auto p =
-      Persistents.emplace(std::piecewise_construct, std::forward_as_tuple(id),
-                          std::forward_as_tuple(isolate, js_value));
+  auto p = PersistentValues.emplace(std::piecewise_construct,
+                                    std::forward_as_tuple(id),
+                                    std::forward_as_tuple(isolate, js_value));
   if (!p.second) {
     printf("COLLISION!\n");
   }
@@ -651,7 +653,7 @@ void j2::PopJuliaValue(v8::Isolate *isolate, uintptr_t id) {
     isolate->TerminateExecution();
   }
 
-  Persistents.erase(id);
+  PersistentValues.erase(id);
 }
 
 v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
