@@ -444,11 +444,10 @@ static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
 }
 
 v8::Local<v8::FunctionTemplate> j2::NewJavaScriptType(v8::Isolate *isolate,
-                                                      jl_datatype_t *) {
-  // JuliaConstruct, v8::External::New(isolate, type)
-  v8::Local<v8::FunctionTemplate> constructor =
-      v8::FunctionTemplate::New(isolate);
-  //  constructor->SetClassName(v8::String::NewFromUtf8(isolate, "JuliaValue"));
+                                                      jl_datatype_t *type) {
+  v8::Local<v8::FunctionTemplate> constructor = v8::FunctionTemplate::New(
+      isolate, JuliaConstruct, v8::External::New(isolate, type));
+  constructor->SetClassName(v8::String::NewFromUtf8(isolate, "JuliaValue"));
 
   constructor->PrototypeTemplate()->Set(
       v8::String::NewFromUtf8(isolate, "valueOf"),
@@ -694,6 +693,12 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
     return FromJuliaFunction(isolate, value);
   }
 
+  if (jl_is_datatype(value)) {
+    JL_GC_POP();
+
+    return FromJuliaType(isolate, value);
+  }
+
   if (cast) {
     if (jl_is_int32(value)) {
       JL_GC_POP();
@@ -731,12 +736,6 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
 
     return obj;
   }
-
-  /*
-    if (jl_is_datatype(value)) {
-      return FromJuliaType(isolate, value);
-    }
-  */
 
   /*
     if (jl_is_module(value)) {

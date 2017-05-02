@@ -137,7 +137,13 @@ describe("Julia", () => {
     });
 
     it("Type", () => {
-        // ...
+        let Foo = Julia.eval(`type Foo
+                              qux::Bool
+                              count::Int64
+                          end;
+                          function (self::Foo)(x) 12 + x + self.count end;
+                          Foo`);
+        console.log(Foo);
     });
 
     /*
