@@ -21,7 +21,6 @@ matrix:
           packages:
             - gcc-4.9
             - g++-4.9
-            - valgrind
       before_install:
         - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 50
         - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 50
@@ -31,7 +30,6 @@ matrix:
         - export LD_PRELOAD=$HOME/julia/lib/libjulia.so
         - export PATH="$PATH:$HOME/julia/bin"
         - julia -e 'versioninfo()'
-        - locate libasan
     - os: osx
       node_js:
         - "6"
