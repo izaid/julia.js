@@ -6,12 +6,12 @@
             "sources": [ "src/j2.cpp", "src/embedded.cpp" ],
             "include_dirs": ["include"],
             'libraries': ['<!@(<(julia_config) --ldlibs)'],
-            'cflags': ['<!@(<(julia_config) --cflags)', '-Werror -Wall'],
-            'ldflags': ['<!@(<(julia_config) --ldflags)'],
+            'cflags': ['<!@(<(julia_config) --cflags)', '-Werror -Wall -fsanitize=address'],
+            'ldflags': ['<!@(<(julia_config) --ldflags)', '-fsanitize=address'],
             "xcode_settings": {
                 'MACOSX_DEPLOYMENT_TARGET': '10.9',
-                'OTHER_CFLAGS': [ '<!@(<(julia_config) --cflags)', '-Werror -Wall'],
-                'OTHER_LDFLAGS': ['<!@(<(julia_config) --ldflags)'],
+                'OTHER_CFLAGS': [ '<!@(<(julia_config) --cflags)', '-Werror -Wall -fsanitize=address'],
+                'OTHER_LDFLAGS': ['<!@(<(julia_config) --ldflags)', '-fsanitize=address'],
             }
         },
         {
