@@ -4,7 +4,7 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "test": "valgrind --leak-check=yes mocha -gc"
+        "test": "valgrind --leak-check=full --show-reachable=yes mocha -gc"
     },
     "repository": {
         "type": "git",
