@@ -31,6 +31,7 @@ matrix:
         - export LD_PRELOAD=$HOME/julia/lib/libjulia.so
         - export PATH="$PATH:$HOME/julia/bin"
         - julia -e 'versioninfo()'
+        - locate libasan
     - os: osx
       node_js:
         - "6"
