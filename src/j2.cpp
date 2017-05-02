@@ -9,7 +9,7 @@
 
 #include <j2.h>
 
-std::map<uintptr_t, v8::UniquePersistent<v8::Object>> j2::Persistents;
+std::map<uintptr_t, v8::UniquePersistent<v8::Value>> j2::Persistents;
 
 v8::Local<v8::Object> NewTypedArray(v8::Isolate *isolate, const char *name,
                                     v8::Local<v8::Value> buffer,

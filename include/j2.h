@@ -11,7 +11,7 @@ extern jl_module_t *js_module;
 /**
  * This is
  */
-extern std::map<uintptr_t, v8::UniquePersistent<v8::Object>> Persistents;
+extern std::map<uintptr_t, v8::UniquePersistent<v8::Value>> Persistents;
 
 v8::Local<v8::Value> PushJuliaValue(v8::Isolate *isolate, jl_value_t *value);
 void PopJuliaValue(v8::Isolate *isolate, uintptr_t id);
