@@ -11,12 +11,6 @@
 
 std::map<uintptr_t, v8::UniquePersistent<v8::Object>> j2::Persistents;
 
-namespace j2 {
-
-std::map<std::string, v8::UniquePersistent<v8::FunctionTemplate>> types;
-
-} // namespace j2
-
 v8::Local<v8::Object> NewTypedArray(v8::Isolate *isolate, const char *name,
                                     v8::Local<v8::Value> buffer,
                                     size_t byte_offset, size_t length) {
@@ -694,6 +688,12 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
     return FromJuliaNothing(isolate, value);
   }
 
+  if (jl_subtype(value, reinterpret_cast<jl_value_t *>(jl_function_type), 1)) {
+    JL_GC_POP();
+
+    return FromJuliaFunction(isolate, value);
+  }
+
   if (cast) {
     if (jl_is_int32(value)) {
       JL_GC_POP();
@@ -737,10 +737,6 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
       return FromJuliaType(isolate, value);
     }
   */
-
-  //  if (jl_subtype(value, reinterpret_cast<jl_value_t *>(jl_function_type),
-  //  1)) { return FromJuliaFunction(isolate, value);
-  //}
 
   /*
     if (jl_is_module(value)) {
