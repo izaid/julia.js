@@ -23,6 +23,9 @@ void PopJuliaValue(v8::Isolate *isolate, uintptr_t id);
  */
 bool TranslateJuliaException(v8::Isolate *isolate);
 
+v8::Local<v8::FunctionTemplate> TemplateFromJuliaType(v8::Isolate *isolate,
+                                                      jl_value_t *value);
+
 v8::Local<v8::Value> FromJuliaArray(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaBool(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaInt32(v8::Isolate *isolate, jl_value_t *value);
@@ -37,9 +40,6 @@ v8::Local<v8::Value> FromJuliaType(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaTuple(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
                                     bool cast = false);
-
-v8::Local<v8::FunctionTemplate> NewJavaScriptType(v8::Isolate *isolate,
-                                                  jl_value_t *type);
 
 jl_value_t *FromJavaScriptArray(v8::Local<v8::Value> value);
 jl_value_t *FromJavaScriptBoolean(v8::Local<v8::Value> value);
