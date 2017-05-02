@@ -422,8 +422,7 @@ void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
 
 v8::Local<v8::Value> j2::FromJuliaType(v8::Isolate *isolate,
                                        jl_value_t *value) {
-  return NewJavaScriptType(isolate, reinterpret_cast<jl_datatype_t *>(value))
-      ->GetFunction();
+  return NewJavaScriptType(isolate, value)->GetFunction();
 }
 
 static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
@@ -444,10 +443,11 @@ static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
 }
 
 v8::Local<v8::FunctionTemplate> j2::NewJavaScriptType(v8::Isolate *isolate,
-                                                      jl_datatype_t *type) {
+                                                      jl_value_t *value) {
   v8::Local<v8::FunctionTemplate> constructor = v8::FunctionTemplate::New(
-      isolate, JuliaConstruct, v8::External::New(isolate, type));
-  constructor->SetClassName(v8::String::NewFromUtf8(isolate, "JuliaValue"));
+      isolate, JuliaConstruct, v8::External::New(isolate, value));
+  constructor->SetClassName(
+      v8::String::NewFromUtf8(isolate, jl_typename_str(value)));
 
   constructor->PrototypeTemplate()->Set(
       v8::String::NewFromUtf8(isolate, "valueOf"),
@@ -455,7 +455,7 @@ v8::Local<v8::FunctionTemplate> j2::NewJavaScriptType(v8::Isolate *isolate,
 
   v8::Local<v8::ObjectTemplate> instance = constructor->InstanceTemplate();
   instance->SetInternalFieldCount(1);
-  // instance->SetCallAsFunctionHandler(JuliaCall2);
+  instance->SetCallAsFunctionHandler(JuliaCall2);
 
   /*
     v8::NamedPropertyHandlerConfiguration handler;
@@ -589,7 +589,8 @@ v8::Local<v8::Value> j2::PushJuliaValue(v8::Isolate *isolate,
     return jt->second.Get(isolate);
   }
 
-  v8::Local<v8::FunctionTemplate> t = NewJavaScriptType(isolate, nullptr);
+  v8::Local<v8::FunctionTemplate> t =
+      NewJavaScriptType(isolate, jl_typeof(value));
   //  if (false) {
   //  PushJuliaValue(isolate, jl_typeof(value));
   //  }

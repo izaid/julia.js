@@ -1,8 +1,8 @@
 module JavaScript
-#    macro NODE_FILE()
-#        path = joinpath(dirname(@__FILE__), "julia.node")
-#        return :($path)
-#    end
+    macro NODE_FILE()
+        path = joinpath(dirname(@__FILE__), "julia.node")
+        return :($path)
+    end
 
 #    type JavaScriptValue
 #        val::Ptr{Void}
@@ -19,10 +19,10 @@ module JavaScript
 #    end
 end
 
-#function js(src)
-#    ccall((:JSEval, @JavaScript.NODE_FILE), Any, (Cstring,), src)
-#end
+function js(src)
+    ccall((:JSEval, @JavaScript.NODE_FILE), Any, (Cstring,), src)
+end
 
-#macro js_str(src)
-#    js(src)
-#end
+macro js_str(src)
+    js(src)
+end

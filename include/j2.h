@@ -37,7 +37,7 @@ v8::Local<v8::Value> FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
                                     bool cast = false);
 
 v8::Local<v8::FunctionTemplate> NewJavaScriptType(v8::Isolate *isolate,
-                                                  jl_datatype_t *type);
+                                                  jl_value_t *type);
 
 jl_value_t *FromJavaScriptArray(v8::Local<v8::Value> value);
 // jl_value_t *FromJavaScriptJuliaArrayDescriptor(v8::Isolate *isolate,
@@ -64,6 +64,3 @@ void Require(const v8::FunctionCallbackInfo<v8::Value> &info);
 
 extern "C" jl_value_t *UnboxJuliaValue(v8::Isolate *isolate,
                                        v8::Local<v8::Value> value);
-
-// From a JavaScriptValue to a more specific Julia type
-// extern "C" jl_value_t *ToJuliaArray(jl_value_t *value);

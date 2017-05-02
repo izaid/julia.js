@@ -72,6 +72,12 @@ describe("Julia", () => {
     });
 
     it("Complex128", () => {
+        //        let Complex128 = Julia.eval("Complex128");
+        //      console.log(Complex128);
+
+        //        let c = new Complex128(0.0, 1.0);
+        //      console.log(c);
+
         assert.deepStrictEqual({
             re: 0.0,
             im: 1.0
@@ -136,15 +142,22 @@ describe("Julia", () => {
         assert.strictEqual(5, f(2, 3));
     });
 
-    it("Type", () => {
-        let Foo = Julia.eval(`type Foo
-                              qux::Bool
-                              count::Int64
-                          end;
-                          function (self::Foo)(x) 12 + x + self.count end;
-                          Foo`);
-        console.log(Foo);
-    });
+    //    it("Type", () => {
+    //      let T = Julia.eval(`type T
+    //                              qux::Bool
+    //                      end; T`);
+    //        console.log(T);
+
+    //        let val = new T(true);
+    //      console.dir(val);
+
+    /*
+                              function (self::Foo)(x) 12 + x + self.count end;
+                              Foo
+
+count::Int64
+*/
+    //    });
 
     /*
 it("Type", () => {
@@ -200,13 +213,38 @@ it("Type", () => {
     });
 */
 
+});
+
+describe("JavaScript", () => {
+    it("Boolean", () => {
+        assert.strictEqual(true, Julia.eval("js\"true\""));
+        assert.strictEqual(false, Julia.eval("js\"false\""));
+    });
+
+    it("Number", () => {
+        assert.strictEqual(2, Julia.eval("js\"2\""));
+    });
+
+    //    it("JavaScriptString", () => {
+    //      assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello,
+    //      world!\"\""));
+    //  });
+
+    it("Null", () => {
+        assert.strictEqual(null, Julia.eval("js\"null\""));
+    });
+
+    //    it("JavaScriptValue", () => {
+    //      assert.deepEqual({
+    //        x: 1,
+    //      y: 2
+    //}, Julia.eval("js\"var z = {x: 1, y: 2}; z\""));
+
+    //        var res = Julia.eval("convert(Any, js\"var z = {x: 1, y: 2}; z\")");
+    //      console.log(res);
+    //  });
+
     /*
-  it("JavaScriptNull",
-     () => { assert.strictEqual(null, Julia.eval("js\"null\"")); });
-
-  it("JavaScriptNumber",
-     () => { assert.strictEqual(2, Julia.eval("js\"2\"")); });
-
   it("JavaScriptArray", () => {
     var convertArray = Julia.eval("(value) -> convert(Array, value)");
     var size = Julia.eval("size");
@@ -224,19 +262,4 @@ it("Type", () => {
                      }).valueOf());
   });
 */
-
-    //    it("JavaScriptString", () => {
-    //      assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello,
-    //      world!\"\""));
-    //  });
-
-    //    it("JavaScriptValue", () => {
-    //      assert.deepEqual({
-    //        x: 1,
-    //      y: 2
-    //}, Julia.eval("js\"var z = {x: 1, y: 2}; z\""));
-
-    //        var res = Julia.eval("convert(Any, js\"var z = {x: 1, y: 2}; z\")");
-    //      console.log(res);
-    //  });
 });
