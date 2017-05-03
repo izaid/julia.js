@@ -27,6 +27,31 @@ static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
   res.Set(j2::FromJuliaValue(isolate, value, true));
 }
 
+static void JuliaConstruct(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::Local<v8::External> external = info.Data().As<v8::External>();
+  jl_value_t *value = static_cast<jl_value_t *>(external->Value());
+
+  jl_svec_t *args = jl_alloc_svec(info.Length());
+  for (size_t i = 0; i < jl_svec_len(args); ++i) {
+    jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
+
+    jl_svec_data(args)[i] = value;
+  }
+
+  jl_value_t *u = jl_call(value, jl_svec_data(args), jl_svec_len(args));
+  //  printf("value = %i\n", jl_unbox_bool(u));
+
+  //  info.This() = j2::FromJuliaValue(isolate, u).As<v8::Object>();
+
+  //  info.This() = j2::NewPersistent<v8::Value>(isolate, u).As<v8::Object>();
+
+  info.This()->SetInternalField(
+      0, v8::External::New(isolate, reinterpret_cast<void *>(jl_object_id(u))));
+  j2::NewPersistent<v8::Value>(isolate, u);
+}
+
 namespace j2 {
 
 template <>
@@ -48,7 +73,7 @@ v8::Local<v8::FunctionTemplate> New<v8::FunctionTemplate>(v8::Isolate *isolate,
   JL_GC_PUSH1(&value);
 
   v8::Local<v8::FunctionTemplate> constructor = v8::FunctionTemplate::New(
-      isolate); //, JuliaConstruct, v8::External::New(isolate, value));
+      isolate, JuliaConstruct, v8::External::New(isolate, value));
   constructor->SetClassName(
       v8::String::NewFromUtf8(isolate, jl_typename_str(value)));
 
@@ -505,27 +530,6 @@ v8::Local<v8::Value> j2::FromJuliaFunction(v8::Isolate *isolate,
                                            jl_value_t *value) {
   return v8::Function::New(isolate, JuliaCall,
                            v8::External::New(isolate, value));
-}
-
-void JuliaConstruct(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  v8::Local<v8::External> external = info.Data().As<v8::External>();
-  jl_value_t *value = static_cast<jl_value_t *>(external->Value());
-
-  jl_svec_t *args = jl_alloc_svec(info.Length());
-  for (size_t i = 0; i < jl_svec_len(args); ++i) {
-    jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
-
-    jl_svec_data(args)[i] = value;
-  }
-
-  jl_value_t *u = jl_call(value, jl_svec_data(args), jl_svec_len(args));
-  //  printf("value = %i\n", jl_unbox_bool(u));
-
-  //  info.This() = j2::FromJuliaValue(isolate, u).As<v8::Object>();
-
-  info.This()->SetInternalField(0, v8::External::New(isolate, u));
 }
 
 void ImportGet(v8::Local<v8::Name> name,

@@ -72,20 +72,25 @@ describe("Julia", () => {
     });
 
     it("Complex128", () => {
-        //        let Complex128 = Julia.eval("Complex128");
-        //      console.log(Complex128);
-
-        //        let c = new Complex128(0.0, 1.0);
-        //      console.log(c);
+        let Complex128 = Julia.eval("Complex128");
 
         assert.deepStrictEqual({
             re: 0.0,
             im: 1.0
         }, Julia.eval("1.0im").valueOf());
         assert.deepStrictEqual({
+            re: 0.0,
+            im: 1.0
+        }, (new Complex128(0.0, 1.0)).valueOf());
+
+        assert.deepStrictEqual({
             re: 1.0,
             im: 1.0
         }, Julia.eval("1.0 + 1.0im").valueOf());
+        assert.deepStrictEqual({
+            re: 1.0,
+            im: 1.0
+        }, (new Complex128(1.0, 1.0)).valueOf());
     });
 
     it("String", () => {
