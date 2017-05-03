@@ -147,22 +147,22 @@ describe("Julia", () => {
         assert.strictEqual(5, f(2, 3));
     });
 
-    //    it("Type", () => {
-    //      let T = Julia.eval(`type T
-    //                              qux::Bool
-    //                      end; T`);
-    //        console.log(T);
+    it("Type", () => {
+        let T = Julia.eval(`type T
+                                bar
+                                baz::Int
+                                qux::Float64
+                            end; T`);
+        //                          function (self::T)(x) 12 + x + self.count end;
 
-    //        let val = new T(true);
-    //      console.dir(val);
-
-    /*
-                              function (self::Foo)(x) 12 + x + self.count end;
-                              Foo
-
-count::Int64
-*/
-    //    });
+        let obj = new T("Hello, world.", 23, 1.5);
+        assert(obj instanceof T);
+        assert.deepStrictEqual({
+            bar: "Hello, world.",
+            baz: 23,
+            qux: 1.5
+        }, obj.valueOf());
+    });
 
     /*
 it("Type", () => {
@@ -171,7 +171,7 @@ it("Type", () => {
 
     let Foo = Julia.eval(`type Foo
                               qux::Bool
-                              count::Int64
+
                           end;
                           function (self::Foo)(x) 12 + x + self.count end;
                           Foo`);
