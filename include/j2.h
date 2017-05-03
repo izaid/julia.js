@@ -11,12 +11,8 @@ extern jl_module_t *js_module;
 /**
  * This is
  */
-extern std::map<uintptr_t, v8::UniquePersistent<v8::FunctionTemplate>>
-    PersistentTemplates;
-extern std::map<uintptr_t, v8::UniquePersistent<v8::Value>> PersistentValues;
 
-v8::Local<v8::Value> PushJuliaValue(v8::Isolate *isolate, jl_value_t *value);
-void PopJuliaValue(v8::Isolate *isolate, uintptr_t id);
+size_t SizeOfJuliaValue(jl_value_t *value);
 
 /**
  *
@@ -25,6 +21,13 @@ bool TranslateJuliaException(v8::Isolate *isolate);
 
 v8::Local<v8::FunctionTemplate> TemplateFromJuliaType(v8::Isolate *isolate,
                                                       jl_value_t *value);
+
+template <typename T> v8::Local<T> New(v8::Isolate *isolate, jl_value_t *value);
+template <typename T>
+v8::Local<T> NewPersistent(v8::Isolate *isolate, jl_value_t *value);
+
+void PushJuliaValue(v8::Isolate *isolate, uintptr_t id, jl_value_t *value);
+void PopJuliaValue(v8::Isolate *isolate, uintptr_t id);
 
 v8::Local<v8::Value> FromJuliaArray(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaBool(v8::Isolate *isolate, jl_value_t *value);
