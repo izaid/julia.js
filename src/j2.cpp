@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <iostream>
+#include <map>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -26,9 +27,24 @@ static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
   res.Set(j2::FromJuliaValue(isolate, value, true));
 }
 
+namespace j2 {
+
 template <>
-v8::Local<v8::FunctionTemplate>
-j2::New<v8::FunctionTemplate>(v8::Isolate *isolate, jl_value_t *value) {
+v8::Local<v8::Value> New<v8::Value>(v8::Isolate *isolate, jl_value_t *value) {
+  v8::Local<v8::FunctionTemplate> t =
+      NewPersistent<v8::FunctionTemplate>(isolate, jl_typeof(value));
+
+  v8::Local<v8::Object> res = t->InstanceTemplate()->NewInstance();
+  res->SetInternalField(
+      0, v8::External::New(isolate,
+                           reinterpret_cast<void *>(jl_object_id(value))));
+
+  return res;
+}
+
+template <>
+v8::Local<v8::FunctionTemplate> New<v8::FunctionTemplate>(v8::Isolate *isolate,
+                                                          jl_value_t *value) {
   JL_GC_PUSH1(&value);
 
   v8::Local<v8::FunctionTemplate> constructor = v8::FunctionTemplate::New(
@@ -54,6 +70,8 @@ j2::New<v8::FunctionTemplate>(v8::Isolate *isolate, jl_value_t *value) {
   JL_GC_POP();
   return constructor;
 }
+
+} // namespace j2
 
 template <typename T>
 v8::Local<T> j2::NewPersistent(v8::Isolate *isolate, jl_value_t *value) {
@@ -654,20 +672,6 @@ v8::Local<v8::Value> j2::FromJuliaModule(v8::Isolate *isolate,
 }
 
 jl_module_t *j2::js_module;
-
-template <>
-v8::Local<v8::Value> j2::New<v8::Value>(v8::Isolate *isolate,
-                                        jl_value_t *value) {
-  v8::Local<v8::FunctionTemplate> t =
-      NewPersistent<v8::FunctionTemplate>(isolate, jl_typeof(value));
-
-  v8::Local<v8::Object> res = t->InstanceTemplate()->NewInstance();
-  res->SetInternalField(
-      0, v8::External::New(isolate,
-                           reinterpret_cast<void *>(jl_object_id(value))));
-
-  return res;
-}
 
 v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
                                         bool cast) {
