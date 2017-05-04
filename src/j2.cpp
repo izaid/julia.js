@@ -102,7 +102,26 @@ static void JuliaConstruct(const v8::FunctionCallbackInfo<v8::Value> &info) {
   j2::NewPersistent<v8::Value>(isolate, u);
 }
 
-void JuliaCall2(const v8::FunctionCallbackInfo<v8::Value> &info) {
+static void JuliaCall(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::Local<v8::External> external = info.Data().As<v8::External>();
+  jl_value_t *value = static_cast<jl_value_t *>(external->Value());
+
+  jl_svec_t *args = jl_alloc_svec(info.Length());
+  for (size_t i = 0; i < jl_svec_len(args); ++i) {
+    jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
+
+    jl_svec_data(args)[i] = value;
+  }
+
+  jl_value_t *u = jl_call(value, jl_svec_data(args), jl_svec_len(args));
+
+  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+  res.Set(j2::FromJuliaValue(isolate, u));
+}
+
+static void JuliaCall2(const v8::FunctionCallbackInfo<v8::Value> &info) {
   static jl_value_t *getindex = jl_get_function(jl_main_module, "getindex");
   assert(getindex != nullptr);
 
@@ -578,25 +597,6 @@ v8::Local<v8::Value> j2::FromJuliaArray(v8::Isolate *isolate,
                jl_array_len(value)));
 
   return res;
-}
-
-void JuliaCall(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  v8::Local<v8::External> external = info.Data().As<v8::External>();
-  jl_value_t *value = static_cast<jl_value_t *>(external->Value());
-
-  jl_svec_t *args = jl_alloc_svec(info.Length());
-  for (size_t i = 0; i < jl_svec_len(args); ++i) {
-    jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
-
-    jl_svec_data(args)[i] = value;
-  }
-
-  jl_value_t *u = jl_call(value, jl_svec_data(args), jl_svec_len(args));
-
-  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-  res.Set(j2::FromJuliaValue(isolate, u));
 }
 
 v8::Local<v8::Value> j2::FromJuliaFunction(v8::Isolate *isolate,
