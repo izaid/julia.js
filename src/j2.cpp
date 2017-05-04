@@ -900,15 +900,3 @@ void j2::Require(const v8::FunctionCallbackInfo<v8::Value> &info) {
   v8::ReturnValue<v8::Value> res = info.GetReturnValue();
   res.Set(j2::FromJuliaModule(isolate, jl_eval_string(*s)));
 }
-
-extern "C" jl_value_t *JSEval(const char *src) {
-  v8::Isolate *isolate = v8::Isolate::GetCurrent();
-
-  v8::Local<v8::Script> script =
-      v8::Script::Compile(isolate->GetCurrentContext(),
-                          v8::String::NewFromUtf8(isolate, src))
-          .ToLocalChecked();
-
-  return j2::FromJavaScriptValue(
-      isolate, script->Run(isolate->GetCurrentContext()).ToLocalChecked());
-}

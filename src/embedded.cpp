@@ -9,6 +9,18 @@
 
 using namespace j2;
 
+extern "C" jl_value_t *JSEval(const char *src) {
+  v8::Isolate *isolate = v8::Isolate::GetCurrent();
+
+  v8::Local<v8::Script> script =
+      v8::Script::Compile(isolate->GetCurrentContext(),
+                          v8::String::NewFromUtf8(isolate, src))
+          .ToLocalChecked();
+
+  return j2::FromJavaScriptValue(
+      isolate, script->Run(isolate->GetCurrentContext()).ToLocalChecked());
+}
+
 void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
   v8::Isolate *isolate = module->GetIsolate();
 
