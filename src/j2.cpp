@@ -10,6 +10,8 @@
 
 #include <j2.h>
 
+static std::map<uintptr_t, v8::UniquePersistent<v8::Object>> PersistentValues;
+
 static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
   static jl_value_t *getindex = jl_get_function(jl_main_module, "getindex");
   assert(getindex != nullptr);
@@ -483,9 +485,11 @@ jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
   //    return FromJavaScriptObject(isolate, value);
   //}
 
-  jl_value_t *v = jl_call1(
-      js_value_type,
-      jl_box_voidpointer(new v8::Persistent<v8::Value>(isolate, value)));
+  uintptr_t id = value.As<v8::Object>()->GetIdentityHash();
+
+  jl_value_t *v = jl_call1(js_value_type, jl_box_uint64(id));
+  PushValue(value.As<v8::Object>());
+
   if (TranslateJuliaException(isolate)) {
     return jl_nothing;
   }
@@ -766,10 +770,9 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
 
   if (jl_subtype(value, js_value_type, 1)) {
     JL_GC_POP();
-    v8::Persistent<v8::Value> *val =
-        (v8::Persistent<v8::Value> *)jl_unbox_voidpointer(
-            jl_get_nth_field(value, 0));
-    return val->Get(isolate);
+
+    uintptr_t id = jl_unbox_uint64(jl_get_nth_field(value, 0));
+    return GetValue(isolate, id);
   }
 
   if (cast) {
@@ -865,6 +868,23 @@ jl_value_t *ToJuliaArray(jl_value_t *jl_value) {
   return (jl_value_t *)res;
 }
 
+void j2::PushValue(v8::Local<v8::Object> value) {
+  uintptr_t id = value->GetIdentityHash();
+
+  auto p = PersistentValues.emplace(
+      std::piecewise_construct, std::forward_as_tuple(id),
+      std::forward_as_tuple(v8::Isolate::GetCurrent(), value));
+  if (!p.second) {
+    printf("COLLISION!\n");
+  }
+}
+
+v8::Local<v8::Object> j2::GetValue(v8::Isolate *isolate, uintptr_t id) {
+  return PersistentValues[id].Get(isolate);
+}
+
+void j2::PopValue(uintptr_t id) { PersistentValues.erase(id); }
+
 void j2::Eval(const v8::FunctionCallbackInfo<v8::Value> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
@@ -900,3 +920,5 @@ void j2::Require(const v8::FunctionCallbackInfo<v8::Value> &info) {
   v8::ReturnValue<v8::Value> res = info.GetReturnValue();
   res.Set(j2::FromJuliaModule(isolate, jl_eval_string(*s)));
 }
+
+void j2_pop_value(uintptr_t id) { j2::PopValue(id); }
