@@ -1,12 +1,12 @@
 module JavaScript
+    type Value
+        val::Ptr{Void}
+    end
+
     macro NODE_FILE()
         path = joinpath(dirname(@__FILE__), "julia.node")
         return :($path)
     end
-
-#    type JavaScriptValue
-#        val::Ptr{Void}
-#    end
 
     const SHARED = Dict()
 
@@ -14,9 +14,9 @@ module JavaScript
         sprint(showerror, e, catch_backtrace())
     end
 
-#    function convert(::Type{Array}, x::JavaScriptValue)
-#        ccall((:ToJuliaArray, @NODE_FILE), Any, (Any,), x)
-#    end
+    function convert(::Type{Array}, x::Value)
+        ccall((:ToJuliaArray, @NODE_FILE), Any, (Any,), x)
+    end
 end
 
 function js(src)

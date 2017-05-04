@@ -442,6 +442,9 @@ jl_value_t *UnboxJuliaValue(v8::Isolate *isolate,
 
 jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
                                     v8::Local<v8::Value> value) {
+  static jl_value_t *js_value_type = jl_get_function(js_module, "Value");
+  assert(js_value_type != nullptr);
+
   if (value->IsBoolean()) {
     return FromJavaScriptBoolean(value);
   }
@@ -480,12 +483,12 @@ jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
   //    return FromJavaScriptObject(isolate, value);
   //}
 
-  jl_value_t *func = jl_eval_string("JavaScriptValue");
-  jl_value_t *v = jl_new_struct((jl_datatype_t *)func);
-  TranslateJuliaException(isolate);
-
-  jl_set_nth_field(
-      v, 0, jl_box_voidpointer(new v8::Persistent<v8::Value>(isolate, value)));
+  jl_value_t *v = jl_call1(
+      js_value_type,
+      jl_box_voidpointer(new v8::Persistent<v8::Value>(isolate, value)));
+  if (TranslateJuliaException(isolate)) {
+    return jl_nothing;
+  }
 
   return v;
 }
@@ -683,6 +686,11 @@ void ModuleEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
 
 } // unnamed namespace
 
+v8::Local<v8::Value> j2::FromJuliaJavaScriptValue(v8::Isolate *isolate,
+                                                  jl_value_t *value) {
+  return v8::Null(isolate);
+}
+
 v8::Local<v8::Value> j2::FromJuliaModule(v8::Isolate *isolate,
                                          jl_value_t *value) {
   v8::Local<v8::ObjectTemplate> instance = v8::ObjectTemplate::New(isolate);
@@ -704,6 +712,9 @@ jl_module_t *j2::js_module;
 
 v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
                                         bool cast) {
+  static jl_value_t *js_value_type = jl_get_function(js_module, "Value");
+  assert(js_value_type != nullptr);
+
   JL_GC_PUSH1(&value);
 
   if (jl_is_bool(value)) {
@@ -751,6 +762,14 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
   if (jl_is_module(value)) {
     JL_GC_POP();
     return FromJuliaModule(isolate, value);
+  }
+
+  if (jl_subtype(value, js_value_type, 1)) {
+    JL_GC_POP();
+    v8::Persistent<v8::Value> *val =
+        (v8::Persistent<v8::Value> *)jl_unbox_voidpointer(
+            jl_get_nth_field(value, 0));
+    return val->Get(isolate);
   }
 
   if (cast) {
@@ -804,9 +823,8 @@ v8::Local<v8::Value> UnboxJavaScriptValue(v8::Isolate *isolate,
   return persistent.Get(isolate);
 }
 
-/*
 jl_value_t *ToJuliaArray(jl_value_t *jl_value) {
-  static const std::unordered_map<std::string, jl_datatype_t *> jl_eltypes{
+  static const std::map<std::string, jl_datatype_t *> jl_eltypes{
       {"Uint8Array", jl_uint8_type},
       {"Uint16Array", jl_uint16_type},
       {"Float32Array", jl_float32_type},
@@ -846,7 +864,6 @@ jl_value_t *ToJuliaArray(jl_value_t *jl_value) {
 
   return (jl_value_t *)res;
 }
-*/
 
 void j2::Eval(const v8::FunctionCallbackInfo<v8::Value> &info) {
   v8::Isolate *isolate = info.GetIsolate();
