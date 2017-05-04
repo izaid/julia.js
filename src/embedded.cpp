@@ -9,6 +9,72 @@
 
 using namespace j2;
 
+void Convert(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  static jl_value_t *convert = jl_get_function(js_module, "convert");
+  assert(convert != nullptr);
+
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::String::Utf8Value s(info[0]);
+  if (*s == NULL) {
+    printf("NULL\n");
+    isolate->ThrowException(
+        v8::Exception::Error(v8::String::NewFromUtf8(isolate, "Error")));
+    return;
+  }
+
+  jl_value_t *type = jl_eval_string(*s);
+  if (TranslateJuliaException(isolate)) {
+    return;
+  }
+
+  jl_value_t *u = jl_call2(convert, type, FromJavaScriptValue(isolate, info[1]));
+  if (TranslateJuliaException(isolate)) {
+    return;
+  }
+
+  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+  res.Set(FromJuliaValue(isolate, u));
+}
+
+void Eval(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::String::Utf8Value s(info[0]);
+  if (*s == NULL) {
+    printf("NULL\n");
+    isolate->ThrowException(
+        v8::Exception::Error(v8::String::NewFromUtf8(isolate, "Error")));
+    return;
+  }
+
+  jl_value_t *value = jl_eval_string(*s);
+  if (TranslateJuliaException(isolate)) {
+    return;
+  }
+
+  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+  res.Set(FromJuliaValue(isolate, value));
+}
+
+void Require(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  static jl_function_t *require = jl_get_function(jl_base_module, "require");
+  assert(require != nullptr);
+
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::Local<v8::Value> code = info[0]->ToObject();
+  v8::String::Utf8Value s(code);
+  if (s.length() == 0) {
+    // ... name is not a string
+  }
+
+  jl_call1(require, (jl_value_t *)jl_symbol(*s));
+
+  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+  res.Set(FromJuliaModule(isolate, jl_eval_string(*s)));
+}
+
 extern "C" jl_value_t *JSEval(const char *src) {
   v8::Isolate *isolate = v8::Isolate::GetCurrent();
 
@@ -24,8 +90,9 @@ extern "C" jl_value_t *JSEval(const char *src) {
 void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
   v8::Isolate *isolate = module->GetIsolate();
 
-  NODE_SET_METHOD(exports, "eval", j2::Eval);
-  NODE_SET_METHOD(exports, "require", j2::Require);
+  NODE_SET_METHOD(exports, "convert", Convert);
+  NODE_SET_METHOD(exports, "eval", Eval);
+  NODE_SET_METHOD(exports, "require", Require);
 
   jl_init(JULIA_INIT_DIR);
 

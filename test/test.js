@@ -217,50 +217,31 @@ describe("JavaScript", function() {
     });
 
     it("Object", function() {
-        Julia.eval("js\"var z = {x: 1, y: 2}; z\"");
-        //        assert.deepEqual({
-        //          x: 1,
-        //        y: 2
-        //  }, Julia.eval("js\"var z = {x: 1, y: 2}; z\""));
+        assert.deepEqual({
+            x: 1,
+            y: 2
+        }, Julia.eval("js\"var z = {x: 1, y: 2}; z\""));
     });
 
-    /*
-    it("Array", () => {
-        var convertArray = Julia.eval("(value) -> convert(Array, value)");
-        var size = Julia.eval("size");
-
+    it("Array", function() {
         assert.deepEqual({
             dims: [5],
             data: new Float32Array([0, 1, 2, 3, 4])
-        }, convertArray({
+        }, Julia.convert("Array", {
             dims: [5],
             data: new Float32Array([0, 1, 2, 3, 4])
         }).valueOf());
+
+        assert.deepEqual({
+            dims: [
+                2, 2
+            ],
+            data: new Uint8Array([0, 1, 2, 3])
+        }, Julia.convert("Array", {
+            dims: [
+                2, 2
+            ],
+            data: new Uint8Array([0, 1, 2, 3])
+        }).valueOf());
     });
-*/
-
-    /*
-    assert.deepEqual({dims : [ 5 ], data : new Float32Array([ 0, 1, 2, 3, 4 ])},
-                     convertArray({
-                       dims : [ 5 ],
-                       data : new Float32Array([ 0, 1, 2, 3, 4 ])
-                     }).valueOf());
-
-    assert.deepEqual({dims : [ 2, 2 ], data : new Uint8Array([ 0, 1, 2, 3 ])},
-                     convertArray({
-                       dims : [ 2, 2 ],
-                       data : new Uint8Array([ 0, 1, 2, 3 ])
-                     }).valueOf());
-*/
-
-    //    it("JavaScriptValue", () => {
-    //      assert.deepEqual({
-    //        x: 1,
-    //      y: 2
-    //}, Julia.eval("js\"var z = {x: 1, y: 2}; z\""));
-
-    //        var res = Julia.eval("convert(Any, js\"var z = {x: 1, y: 2}; z\")");
-    //      console.log(res);
-    //  });
-
 });

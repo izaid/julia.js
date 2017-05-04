@@ -820,13 +820,10 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
 v8::Local<v8::Value> UnboxJavaScriptValue(v8::Isolate *isolate,
                                           jl_value_t *value) {
   jl_value_t *ptr = jl_get_nth_field(value, 0);
-
-  v8::Persistent<v8::Value> &persistent =
-      *static_cast<v8::Persistent<v8::Value> *>(jl_unbox_voidpointer(ptr));
-  return persistent.Get(isolate);
+  return j2::GetValue(isolate, jl_unbox_uint64(ptr));
 }
 
-jl_value_t *ToJuliaArray(jl_value_t *jl_value) {
+jl_value_t *j2_to_julia_array(jl_value_t *jl_value) {
   static const std::map<std::string, jl_datatype_t *> jl_eltypes{
       {"Uint8Array", jl_uint8_type},
       {"Uint16Array", jl_uint16_type},
@@ -884,41 +881,5 @@ v8::Local<v8::Object> j2::GetValue(v8::Isolate *isolate, uintptr_t id) {
 }
 
 void j2::PopValue(uintptr_t id) { PersistentValues.erase(id); }
-
-void j2::Eval(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  v8::String::Utf8Value s(info[0]);
-  if (*s == NULL) {
-    printf("NULL\n");
-    isolate->ThrowException(
-        v8::Exception::Error(v8::String::NewFromUtf8(isolate, "Error")));
-    return;
-  }
-
-  jl_value_t *value = jl_eval_string(*s);
-  if (TranslateJuliaException(isolate)) {
-    return;
-  }
-
-  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-  res.Set(FromJuliaValue(isolate, value));
-}
-
-void j2::Require(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  v8::Local<v8::Value> code = info[0]->ToObject();
-  v8::String::Utf8Value s(code);
-  if (s.length() == 0) {
-    // ... name is not a string
-  }
-
-  jl_function_t *require = jl_get_function(jl_base_module, "require");
-  jl_call1(require, (jl_value_t *)jl_symbol(*s));
-
-  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-  res.Set(j2::FromJuliaModule(isolate, jl_eval_string(*s)));
-}
 
 void j2_pop_value(uintptr_t id) { j2::PopValue(id); }

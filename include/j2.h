@@ -59,9 +59,7 @@ jl_value_t *FromJavaScriptObject(v8::Isolate *isolate,
 jl_value_t *FromJavaScriptValue(v8::Isolate *isolate,
                                 v8::Local<v8::Value> value);
 
-void Eval(const v8::FunctionCallbackInfo<v8::Value> &info);
-void Require(const v8::FunctionCallbackInfo<v8::Value> &info);
-
 } // namespace j2
 
 extern "C" void j2_pop_value(uintptr_t id);
+extern "C" jl_value_t *j2_to_julia_array(jl_value_t *value);

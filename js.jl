@@ -25,7 +25,7 @@ module JavaScript
     end
 
     function convert(::Type{Array}, x::Value)
-        ccall((:ToJuliaArray, @NODE_FILE), Any, (Any,), x)
+        ccall((:j2_to_julia_array, @NODE_FILE), Any, (Any,), x)
     end
 end
 
