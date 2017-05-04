@@ -150,8 +150,7 @@ v8::Local<v8::FunctionTemplate> New<v8::FunctionTemplate>(v8::Isolate *isolate,
 
   v8::Local<v8::FunctionTemplate> constructor = v8::FunctionTemplate::New(
       isolate, JuliaConstruct, v8::External::New(isolate, value));
-  constructor->SetClassName(
-      v8::String::NewFromUtf8(isolate, jl_typename_str(value)));
+  constructor->SetClassName(v8::String::NewFromUtf8(isolate, "JuliaValue"));
 
   constructor->PrototypeTemplate()->Set(
       v8::String::NewFromUtf8(isolate, "valueOf"),
@@ -437,7 +436,8 @@ jl_value_t *UnboxJuliaValue(v8::Isolate *isolate,
   v8::Local<v8::Value> js_external =
       js_value.As<v8::Object>()->GetInternalField(0);
 
-  return static_cast<jl_value_t *>(js_external.As<v8::External>()->Value());
+  return j2::GetJuliaValue(
+      reinterpret_cast<uintptr_t>(js_external.As<v8::External>()->Value()));
 }
 
 jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,

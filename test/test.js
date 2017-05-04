@@ -172,6 +172,9 @@ describe("Julia", () => {
         assert.strictEqual(23, obj.baz);
         assert.strictEqual(1.5, obj.qux);
         assert.strictEqual(39, obj(4));
+
+        let f = Julia.eval(`(self::T, x) -> self(x)`);
+        assert.strictEqual(39, f(obj, 4));
     });
 
     it("Module", () => {
