@@ -6,8 +6,8 @@ after(() => {
     global.gc();
 });
 
-describe("Julia", () => {
-    it("Exception", () => {
+describe("Julia", function() {
+    it("Exception", function() {
         assert.throws(() => {
             Julia.eval("assert(false)");
         }, /^Error: AssertionError/);
@@ -35,43 +35,43 @@ describe("Julia", () => {
         assert.throws(() => {
             Julia.eval("x");
         }, /^Error: UndefVarError/);
-    }).timeout(10000);
+    });
 
-    it("Bool", () => {
+    it("Bool", function() {
         assert.strictEqual(true, Julia.eval("true"));
         assert.strictEqual(false, Julia.eval("false"));
     });
 
-    it("Int32", () => {
+    it("Int32", function() {
         assert.strictEqual(0, Julia.eval("Int32(0)").valueOf());
         assert.strictEqual(1, Julia.eval("Int32(1)").valueOf());
         assert.strictEqual(1, Julia.eval("Int32(1)").valueOf());
     });
 
-    it("Int64", () => {
+    it("Int64", function() {
         assert.strictEqual(0, Julia.eval("Int64(0)"));
         assert.strictEqual(1, Julia.eval("Int64(1)"));
     });
 
-    it("Float32", () => {
+    it("Float32", function() {
         assert.strictEqual(0.0, Julia.eval("0.0f0").valueOf());
         assert.strictEqual(0.5, Julia.eval("0.5f0").valueOf());
         assert.strictEqual(0.5, Julia.eval("0.5f0").valueOf());
     });
 
-    it("Float64", () => {
+    it("Float64", function() {
         assert.strictEqual(0.0, Julia.eval("0.0"));
         assert.strictEqual(0.5, Julia.eval("0.5"));
     });
 
-    it("Complex64", () => {
+    it("Complex64", function() {
         assert.deepStrictEqual({
             re: 0.0,
             im: 1.0
         }, Julia.eval("1.0f0im").valueOf());
     });
 
-    it("Complex128", () => {
+    it("Complex128", function() {
         let Complex128 = Julia.eval("Complex128");
 
         assert.deepStrictEqual({
@@ -93,16 +93,16 @@ describe("Julia", () => {
         }, (new Complex128(1.0, 1.0)).valueOf());
     });
 
-    it("String", () => {
+    it("String", function() {
         assert.strictEqual("Hello, world!", Julia.eval("\"Hello, world!\""));
         assert.notStrictEqual("Hello, world!", Julia.eval("\"Hello, wo\""));
     });
 
-    it("Nothing", () => {
+    it("Nothing", function() {
         assert.strictEqual(null, Julia.eval("nothing"));
     });
 
-    it("Tuple", () => {
+    it("Tuple", function() {
         assert.deepStrictEqual([], Julia.eval("()").valueOf());
 
         assert.deepStrictEqual(["Hello, world!"], Julia.eval("(\"Hello, world!\",)").valueOf());
@@ -112,7 +112,7 @@ describe("Julia", () => {
         ], Julia.eval("(0, 1, 2, 3, 4)").valueOf());
     });
 
-    it("Array", () => {
+    it("Array", function() {
         assert.deepEqual({
             dims: [5],
             data: new Float32Array([0, 1, 2, 3, 4])
@@ -123,9 +123,9 @@ describe("Julia", () => {
             ],
             data: new Float32Array([0, 1, 2, 3])
         }, Julia.eval("[[0.0f0, 1.0f0] [2.0f0, 3.0f0]]").valueOf());
-    }).timeout(10000);
+    });
 
-    it("Function", () => {
+    it("Function", function() {
         let f = Julia.eval("() -> 0");
         assert(f instanceof Function);
         assert.strictEqual(0, f());
@@ -147,7 +147,7 @@ describe("Julia", () => {
         assert.strictEqual(5, f(2, 3));
     });
 
-    it("Type", () => {
+    it("Type", function() {
         let T = Julia.eval(`type T
                                 bar
                                 baz::Int
@@ -177,7 +177,7 @@ describe("Julia", () => {
         assert.strictEqual(39, f(obj, 4));
     });
 
-    it("Module", () => {
+    it("Module", function() {
         let Test = Julia.eval("Test");
         assert.deepEqual([
             "@inferred",
@@ -193,28 +193,28 @@ describe("Julia", () => {
         ], Object.keys(Test).sort());
     });
 
-    it("Stress", () => {
+    it("Stress", function() {
         for (let i = 0; i < 1000; ++i) {
             Julia.eval("rand(500, 500)");
         }
-    }).timeout(10000);
+    });
 });
 
-describe("JavaScript", () => {
-    it("Boolean", () => {
+describe("JavaScript", function() {
+    it("Boolean", function() {
         assert.strictEqual(true, Julia.eval("js\"true\""));
         assert.strictEqual(false, Julia.eval("js\"false\""));
     });
 
-    it("Number", () => {
+    it("Number", function() {
         assert.strictEqual(2, Julia.eval("js\"2\""));
     });
 
-    it("String", () => {
+    it("String", function() {
         //        assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello, world!\"\""));
     });
 
-    it("Null", () => {
+    it("Null", function() {
         assert.strictEqual(null, Julia.eval("js\"null\""));
     });
 
