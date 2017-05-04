@@ -2,7 +2,11 @@ var assert = require('assert');
 
 var Julia = require('../julia');
 
-after(() => {
+after(function() {
+    for (let i = 0; i < 1000; ++i) {
+        Julia.eval("rand(500, 500)");
+    }
+
     global.gc();
 });
 
@@ -191,12 +195,6 @@ describe("Julia", function() {
             "GenericString",
             "detect_ambiguities"
         ], Object.keys(Test).sort());
-    });
-
-    it("Stress", function() {
-        for (let i = 0; i < 1000; ++i) {
-            Julia.eval("rand(500, 500)");
-        }
     });
 });
 
