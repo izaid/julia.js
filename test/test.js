@@ -152,8 +152,11 @@ describe("Julia", () => {
                                 bar
                                 baz::Int
                                 qux::Float64
-                            end; T`);
-        //                          function (self::T)(x) 12 + x + self.count end;
+                            end;
+                            function (self::T)(x)
+                                12 + x + self.baz
+                            end;
+                            T`);
 
         let obj = new T("Hello, world.", 23, 1.5);
         assert(obj instanceof T);
@@ -162,6 +165,7 @@ describe("Julia", () => {
             baz: 23,
             qux: 1.5
         }, obj.valueOf());
+        assert.strictEqual(39, obj(4));
     });
 
     /*
@@ -230,10 +234,9 @@ describe("JavaScript", () => {
         assert.strictEqual(2, Julia.eval("js\"2\""));
     });
 
-    //    it("JavaScriptString", () => {
-    //      assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello,
-    //      world!\"\""));
-    //  });
+    it("String", () => {
+//        assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello, world!\"\""));
+    });
 
     it("Null", () => {
         assert.strictEqual(null, Julia.eval("js\"null\""));

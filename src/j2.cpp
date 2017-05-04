@@ -56,11 +56,18 @@ static void JuliaConstruct(const v8::FunctionCallbackInfo<v8::Value> &info) {
 }
 
 void JuliaCall2(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  static jl_value_t *getindex = jl_get_function(jl_main_module, "getindex");
+  assert(getindex != nullptr);
+
+  static jl_value_t *shared = jl_get_function(j2::js_module, "SHARED");
+  assert(shared != nullptr);
+
   v8::Isolate *isolate = info.GetIsolate();
 
   v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
-  jl_value_t *object =
-      static_cast<jl_value_t *>(wrapper.As<v8::External>()->Value());
+  uintptr_t id = reinterpret_cast<uintptr_t>(wrapper.As<v8::External>()->Value());
+
+  jl_value_t *object = jl_call2(getindex, shared, jl_box_uint64(id));
 
   jl_svec_t *args = jl_alloc_svec(info.Length());
   for (size_t i = 0; i < jl_svec_len(args); ++i) {
