@@ -27,6 +27,51 @@ static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
   res.Set(j2::FromJuliaValue(isolate, value, true));
 }
 
+static void ImportGet(v8::Local<v8::Name> name,
+                      const v8::PropertyCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
+
+  uintptr_t id =
+      reinterpret_cast<uintptr_t>(wrapper.As<v8::External>()->Value());
+  jl_value_t *object = j2::GetJuliaValue(id);
+
+  v8::String::Utf8Value s(name);
+  if (s.length() != 0) {
+    jl_value_t *value = jl_get_field(object, *s);
+    if (value != nullptr) {
+      v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+      res.Set(j2::FromJuliaValue(isolate, value));
+    }
+  }
+}
+
+static void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
+
+  uintptr_t id =
+      reinterpret_cast<uintptr_t>(wrapper.As<v8::External>()->Value());
+  jl_value_t *value = j2::GetJuliaValue(id);
+
+  jl_datatype_t *type = (jl_datatype_t *)jl_typeof(value);
+
+  size_t length = jl_field_count(type);
+
+  v8::Local<v8::Array> properties = v8::Array::New(info.GetIsolate(), length);
+  for (size_t i = 0; i < length; ++i) {
+    jl_sym_t *name = jl_field_name(type, i);
+    properties->Set(
+        v8::Number::New(isolate, i),
+        v8::String::NewFromUtf8(
+            isolate, jl_symbol_name(reinterpret_cast<jl_sym_t *>(name))));
+  }
+
+  info.GetReturnValue().Set(properties);
+}
+
 static void JuliaConstruct(const v8::FunctionCallbackInfo<v8::Value> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
@@ -65,7 +110,8 @@ void JuliaCall2(const v8::FunctionCallbackInfo<v8::Value> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
   v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
-  uintptr_t id = reinterpret_cast<uintptr_t>(wrapper.As<v8::External>()->Value());
+  uintptr_t id =
+      reinterpret_cast<uintptr_t>(wrapper.As<v8::External>()->Value());
 
   jl_value_t *object = jl_call2(getindex, shared, jl_box_uint64(id));
 
@@ -115,12 +161,10 @@ v8::Local<v8::FunctionTemplate> New<v8::FunctionTemplate>(v8::Isolate *isolate,
   instance->SetInternalFieldCount(1);
   instance->SetCallAsFunctionHandler(JuliaCall2);
 
-  /*
-    v8::NamedPropertyHandlerConfiguration handler;
-    handler.getter = ImportGet;
-    handler.enumerator = ImportEnumerator;
-    instance->SetHandler(handler);
-  */
+  v8::NamedPropertyHandlerConfiguration handler;
+  handler.getter = ImportGet;
+  handler.enumerator = ImportEnumerator;
+  instance->SetHandler(handler);
 
   JL_GC_POP();
   return constructor;
@@ -177,6 +221,18 @@ size_t j2::SizeOfJuliaValue(jl_value_t *value) {
   }
 
   return jl_unbox_int64(jl_call1(size, value));
+}
+
+jl_value_t *j2::GetJuliaValue(uintptr_t id) {
+  static jl_value_t *getindex = jl_get_function(jl_main_module, "getindex");
+  assert(getindex != nullptr);
+
+  static jl_value_t *shared = jl_get_function(js_module, "SHARED");
+  assert(shared != nullptr);
+
+  jl_value_t *value = jl_call2(getindex, shared, jl_box_uint64(id));
+
+  return value;
 }
 
 void j2::PushJuliaValue(v8::Isolate *isolate, uintptr_t id, jl_value_t *value) {
@@ -542,47 +598,6 @@ v8::Local<v8::Value> j2::FromJuliaFunction(v8::Isolate *isolate,
                            v8::External::New(isolate, value));
 }
 
-void ImportGet(v8::Local<v8::Name> name,
-               const v8::PropertyCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
-  jl_value_t *object =
-      static_cast<jl_value_t *>(wrapper.As<v8::External>()->Value());
-
-  v8::String::Utf8Value s(name);
-  if (s.length() != 0) {
-    jl_value_t *value = jl_get_field(object, *s);
-    if (value != nullptr) {
-      v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-      res.Set(j2::FromJuliaValue(isolate, value));
-    }
-  }
-}
-
-void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
-  jl_value_t *value =
-      static_cast<jl_value_t *>(wrapper.As<v8::External>()->Value());
-
-  jl_datatype_t *type = (jl_datatype_t *)jl_typeof(value);
-
-  size_t length = jl_field_count(type);
-
-  v8::Local<v8::Array> properties = v8::Array::New(info.GetIsolate(), length);
-  for (size_t i = 0; i < length; ++i) {
-    jl_sym_t *name = jl_field_name(type, i);
-    properties->Set(
-        v8::Number::New(isolate, i),
-        v8::String::NewFromUtf8(
-            isolate, jl_symbol_name(reinterpret_cast<jl_sym_t *>(name))));
-  }
-
-  info.GetReturnValue().Set(properties);
-}
-
 v8::Local<v8::Value> j2::FromJuliaType(v8::Isolate *isolate,
                                        jl_value_t *value) {
   return NewPersistent<v8::FunctionTemplate>(isolate, value)->GetFunction();
@@ -733,11 +748,10 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
     return FromJuliaType(isolate, value);
   }
 
-  /*
-    if (jl_is_module(value)) {
-      return FromJuliaModule(isolate, value);
-    }
-  */
+  if (jl_is_module(value)) {
+    JL_GC_POP();
+    return FromJuliaModule(isolate, value);
+  }
 
   if (cast) {
     if (jl_is_int32(value)) {

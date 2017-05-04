@@ -165,46 +165,15 @@ describe("Julia", () => {
             baz: 23,
             qux: 1.5
         }, obj.valueOf());
+        assert.deepEqual([
+            "bar", "baz", "qux"
+        ], Object.keys(obj));
+        assert.strictEqual("Hello, world.", obj.bar);
+        assert.strictEqual(23, obj.baz);
+        assert.strictEqual(1.5, obj.qux);
         assert.strictEqual(39, obj(4));
     });
 
-    /*
-it("Type", () => {
-    assert.strictEqual(Boolean, Julia.eval("Bool"));
-    assert.strictEqual(Number, Julia.eval("Float64"));
-
-    let Foo = Julia.eval(`type Foo
-                              qux::Bool
-
-                          end;
-                          function (self::Foo)(x) 12 + x + self.count end;
-                          Foo`);
-    console.log(Foo)
-
-    var val = new Foo(true, 1);
-    console.log(val.valueOf());
-    assert(val instanceof Foo);
-    assert.deepStrictEqual({
-        qux: true,
-        count: 1
-    }, val.valueOf());
-    assert.deepEqual([
-        "qux", "count"
-    ], Object.keys(val));
-    assert.strictEqual(true, val.qux);
-    assert.strictEqual(1, val.count);
-
-    assert.strictEqual(17, val(4));
-});
-*/
-
-    it("Stress", () => {
-        for (let i = 0; i < 1000; ++i) {
-            Julia.eval("rand(500, 500)");
-        }
-    }).timeout(10000);
-
-    /*
     it("Module", () => {
         let Test = Julia.eval("Test");
         assert.deepEqual([
@@ -220,8 +189,12 @@ it("Type", () => {
             "detect_ambiguities"
         ], Object.keys(Test).sort());
     });
-*/
 
+    it("Stress", () => {
+        for (let i = 0; i < 1000; ++i) {
+            Julia.eval("rand(500, 500)");
+        }
+    }).timeout(10000);
 });
 
 describe("JavaScript", () => {
@@ -235,7 +208,7 @@ describe("JavaScript", () => {
     });
 
     it("String", () => {
-//        assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello, world!\"\""));
+        //        assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello, world!\"\""));
     });
 
     it("Null", () => {
