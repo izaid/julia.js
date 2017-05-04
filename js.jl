@@ -9,13 +9,9 @@ module JavaScript
 
         function Value(id)
             res = new(id)
-            finalizer(res, test_fin)
+            finalizer(res, (x::Value) -> ccall((:j2_pop_value, @NODE_FILE), Void, (UInt64,), x.id))
             res
         end
-    end
-
-    function test_fin(x::Value)
-        ccall((:j2_pop_value, @NODE_FILE), Void, (UInt64,), x.id)
     end
 
     const SHARED = Dict()
