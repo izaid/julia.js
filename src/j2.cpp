@@ -656,7 +656,9 @@ v8::Local<v8::Value> j2::FromJuliaType(v8::Isolate *isolate,
 
 v8::Local<v8::Value> j2::FromJuliaJavaScriptValue(v8::Isolate *isolate,
                                                   jl_value_t *value) {
-  return v8::Null(isolate);
+  jl_value_t *ptr = jl_get_nth_field(value, 0);
+  return static_cast<v8::Persistent<v8::Value> *>(jl_unbox_voidpointer(ptr))
+      ->Get(isolate);
 }
 
 v8::Local<v8::Value> j2::FromJuliaModule(v8::Isolate *isolate,
@@ -687,43 +689,36 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
 
   if (jl_is_bool(value)) {
     JL_GC_POP();
-
     return FromJuliaBool(isolate, value);
   }
 
   if (jl_is_int64(value)) {
     JL_GC_POP();
-
     return FromJuliaInt64(isolate, value);
   }
 
   if (jl_is_float64(value)) {
     JL_GC_POP();
-
     return FromJuliaFloat64(isolate, value);
   }
 
   if (jl_is_string(value)) {
     JL_GC_POP();
-
     return FromJuliaString(isolate, value);
   }
 
   if (jl_is_nothing(value)) {
     JL_GC_POP();
-
     return FromJuliaNothing(isolate, value);
   }
 
   if (jl_subtype(value, reinterpret_cast<jl_value_t *>(jl_function_type), 1)) {
     JL_GC_POP();
-
     return FromJuliaFunction(isolate, value);
   }
 
   if (jl_is_datatype(value)) {
     JL_GC_POP();
-
     return FromJuliaType(isolate, value);
   }
 
@@ -734,10 +729,7 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
 
   if (jl_subtype(value, js_value_type, 1)) {
     JL_GC_POP();
-
-    v8::Persistent<v8::Value> *p = static_cast<v8::Persistent<v8::Value> *>(
-        jl_unbox_voidpointer(jl_get_nth_field(value, 0)));
-    return p->Get(isolate);
+    return FromJuliaJavaScriptValue(isolate, value);
   }
 
   if (cast) {
@@ -782,13 +774,6 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
   return NewPersistent<v8::Value>(isolate, value);
 }
 
-v8::Local<v8::Value> UnboxJavaScriptValue(v8::Isolate *isolate,
-                                          jl_value_t *value) {
-  jl_value_t *ptr = jl_get_nth_field(value, 0);
-  return static_cast<v8::Persistent<v8::Value> *>(jl_unbox_voidpointer(ptr))
-      ->Get(isolate);
-}
-
 jl_value_t *j2_to_julia_array(jl_value_t *jl_value) {
   static const std::map<std::string, jl_datatype_t *> jl_eltypes{
       {"Uint8Array", jl_uint8_type},
@@ -798,7 +783,7 @@ jl_value_t *j2_to_julia_array(jl_value_t *jl_value) {
 
   v8::Isolate *isolate = v8::Isolate::GetCurrent();
 
-  v8::Local<v8::Value> js_value = UnboxJavaScriptValue(isolate, jl_value);
+  v8::Local<v8::Value> js_value = FromJuliaJavaScriptValue(isolate, jl_value);
   v8::Local<v8::Value> js_dims =
       js_value.As<v8::Object>()->Get(v8::String::NewFromUtf8(isolate, "dims"));
   v8::Local<v8::Value> js_data =
