@@ -1,15 +1,15 @@
 module JavaScript
-    macro NODE_FILE()
+    macro __NODE_FILE__()
         path = joinpath(dirname(@__FILE__), "julia.node")
         return :($path)
     end
 
     type Value
-        id::UInt64
+        ptr::Ptr{Void}
 
-        function Value(id)
-            res = new(id)
-            finalizer(res, (x::Value) -> ccall((:j2_pop_value, @NODE_FILE), Void, (UInt64,), x.id))
+        function Value(ptr)
+            res = new(ptr)
+            finalizer(res, (x::Value) -> ccall((:j2_delete_persistent_value, @__NODE_FILE__), Void, (Ptr{Void},), x.ptr))
             res
         end
     end
@@ -21,12 +21,12 @@ module JavaScript
     end
 
     function convert(::Type{Array}, x::Value)
-        ccall((:j2_to_julia_array, @NODE_FILE), Any, (Any,), x)
+        ccall((:j2_to_julia_array, @__NODE_FILE__), Any, (Any,), x)
     end
 end
 
 function js(src)
-    ccall((:JSEval, @JavaScript.NODE_FILE), Any, (Cstring,), src)
+    ccall((:JSEval, @JavaScript.__NODE_FILE__), Any, (Cstring,), src)
 end
 
 macro js_str(src)

@@ -43,10 +43,6 @@ v8::Local<v8::Value> FromJuliaTuple(v8::Isolate *isolate, jl_value_t *value);
 v8::Local<v8::Value> FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
                                     bool cast = false);
 
-void PushValue(v8::Local<v8::Object> value);
-v8::Local<v8::Object> GetValue(v8::Isolate *isolate, uintptr_t id);
-void PopValue(uintptr_t id);
-
 jl_value_t *FromJavaScriptArray(v8::Local<v8::Value> value);
 jl_value_t *FromJavaScriptBoolean(v8::Local<v8::Value> value);
 jl_value_t *FromJavaScriptNull(v8::Local<v8::Value> value);
@@ -60,5 +56,5 @@ jl_value_t *FromJavaScriptValue(v8::Isolate *isolate,
 
 } // namespace j2
 
-extern "C" void j2_pop_value(uintptr_t id);
+extern "C" void j2_delete_persistent_value(void *ptr);
 extern "C" jl_value_t *j2_to_julia_array(jl_value_t *value);

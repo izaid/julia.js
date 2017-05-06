@@ -549,10 +549,9 @@ jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
   //    return FromJavaScriptObject(isolate, value);
   //}
 
-  uintptr_t id = value.As<v8::Object>()->GetIdentityHash();
-
-  jl_value_t *v = jl_call1(js_value_type, jl_box_uint64(id));
-  PushValue(value.As<v8::Object>());
+  jl_value_t *v = jl_call1(
+      js_value_type,
+      jl_box_voidpointer(new v8::Persistent<v8::Value>(isolate, value)));
 
   if (TranslateJuliaException(isolate)) {
     return jl_nothing;
@@ -736,8 +735,9 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
   if (jl_subtype(value, js_value_type, 1)) {
     JL_GC_POP();
 
-    uintptr_t id = jl_unbox_uint64(jl_get_nth_field(value, 0));
-    return GetValue(isolate, id);
+    v8::Persistent<v8::Value> *p = static_cast<v8::Persistent<v8::Value> *>(
+        jl_unbox_voidpointer(jl_get_nth_field(value, 0)));
+    return p->Get(isolate);
   }
 
   if (cast) {
@@ -785,7 +785,8 @@ v8::Local<v8::Value> j2::FromJuliaValue(v8::Isolate *isolate, jl_value_t *value,
 v8::Local<v8::Value> UnboxJavaScriptValue(v8::Isolate *isolate,
                                           jl_value_t *value) {
   jl_value_t *ptr = jl_get_nth_field(value, 0);
-  return j2::GetValue(isolate, jl_unbox_uint64(ptr));
+  return static_cast<v8::Persistent<v8::Value> *>(jl_unbox_voidpointer(ptr))
+      ->Get(isolate);
 }
 
 jl_value_t *j2_to_julia_array(jl_value_t *jl_value) {
@@ -830,21 +831,6 @@ jl_value_t *j2_to_julia_array(jl_value_t *jl_value) {
   return (jl_value_t *)res;
 }
 
-void j2::PushValue(v8::Local<v8::Object> value) {
-  uintptr_t id = value->GetIdentityHash();
-
-  auto p = PersistentValues.emplace(
-      std::piecewise_construct, std::forward_as_tuple(id),
-      std::forward_as_tuple(v8::Isolate::GetCurrent(), value));
-  if (!p.second) {
-    printf("COLLISION!\n");
-  }
+void j2_delete_persistent_value(void *ptr) {
+  delete reinterpret_cast<v8::Persistent<v8::Value> *>(ptr);
 }
-
-v8::Local<v8::Object> j2::GetValue(v8::Isolate *isolate, uintptr_t id) {
-  return PersistentValues[id].Get(isolate);
-}
-
-void j2::PopValue(uintptr_t id) { PersistentValues.erase(id); }
-
-void j2_pop_value(uintptr_t id) { j2::PopValue(id); }
