@@ -100,10 +100,8 @@ void ValueOf(const v8::FunctionCallbackInfo<v8::Value> &info) {
   res.Set(FromJuliaValue(isolate, value, true));
 }
 
-} // unnamed namespace
-
-static void ImportGet(v8::Local<v8::Name> name,
-                      const v8::PropertyCallbackInfo<v8::Value> &info) {
+void ImportGet(v8::Local<v8::Name> name,
+               const v8::PropertyCallbackInfo<v8::Value> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
   jl_value_t *object = static_cast<jl_value_t *>(
@@ -119,7 +117,7 @@ static void ImportGet(v8::Local<v8::Name> name,
   }
 }
 
-static void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
+void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
   jl_value_t *value = static_cast<jl_value_t *>(
@@ -140,6 +138,82 @@ static void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
 
   info.GetReturnValue().Set(properties);
 }
+
+JL_DLLEXPORT jl_value_t *jl_module_names(jl_module_t *m, int all,
+                                         int imported) {
+  jl_array_t *a = jl_alloc_array_1d(jl_array_symbol_type, 0);
+  JL_GC_PUSH1(&a);
+  size_t i;
+  void **table = m->bindings.table;
+  for (i = 1; i < m->bindings.size; i += 2) {
+    if (table[i] != HT_NOTFOUND) {
+      jl_binding_t *b = (jl_binding_t *)table[i];
+      int hidden = jl_symbol_name(b->name)[0] == '#';
+      if ((b->exportp || (imported && b->imported) ||
+           ((b->owner == m) && (all || m == jl_main_module))) &&
+          (all || (!b->deprecated && !hidden))) {
+        jl_array_grow_end(a, 1);
+        // XXX: change to jl_arrayset if array storage allocation for
+        // Array{Symbols,1} changes:
+        jl_array_ptr_set(a, jl_array_dim0(a) - 1, (jl_value_t *)b->name);
+      }
+    }
+  }
+  JL_GC_POP();
+  return (jl_value_t *)a;
+}
+
+void ModuleGetter(v8::Local<v8::Name> name,
+                  const v8::PropertyCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  jl_value_t *module = static_cast<jl_value_t *>(
+      info.This()->GetAlignedPointerFromInternalField(0));
+
+  v8::String::Utf8Value s(name);
+  if (s.length() != 0) {
+    //    JL_GC_PUSH1(&module);
+
+    jl_value_t *value = jl_get_global((jl_module_t *)module, jl_symbol(*s));
+    if (value != nullptr) {
+      //    JL_GC_PUSH1(&value);
+
+      v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+      res.Set(j2::FromJuliaValue(isolate, value));
+
+      //      JL_GC_POP();
+    }
+
+    //    JL_GC_POP();
+  }
+}
+
+void ModuleEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  jl_value_t *module = static_cast<jl_value_t *>(
+      info.This()->GetAlignedPointerFromInternalField(0));
+
+  jl_array_t *names =
+      (jl_array_t *)jl_module_names((jl_module_t *)module, 0, 0);
+  size_t length = jl_array_len(names);
+
+  v8::Local<v8::Array> properties = v8::Array::New(isolate, length);
+  for (size_t i = 0; i < length; ++i) {
+    jl_value_t *v = jl_array_ptr_ref(names, i);
+    if (jl_symbol_name(reinterpret_cast<jl_sym_t *>(v)) !=
+        jl_symbol_name(reinterpret_cast<jl_module_t *>(module)->name)) {
+      properties->Set(
+          v8::Number::New(isolate, i),
+          v8::String::NewFromUtf8(
+              isolate, jl_symbol_name(reinterpret_cast<jl_sym_t *>(v))));
+    }
+  }
+
+  info.GetReturnValue().Set(properties);
+}
+
+} // unnamed namespace
 
 namespace j2 {
 
@@ -580,84 +654,6 @@ v8::Local<v8::Value> j2::FromJuliaType(v8::Isolate *isolate,
                                        jl_value_t *value) {
   return NewPersistent<v8::FunctionTemplate>(isolate, value)->GetFunction();
 }
-
-namespace {
-
-JL_DLLEXPORT jl_value_t *jl_module_names(jl_module_t *m, int all,
-                                         int imported) {
-  jl_array_t *a = jl_alloc_array_1d(jl_array_symbol_type, 0);
-  JL_GC_PUSH1(&a);
-  size_t i;
-  void **table = m->bindings.table;
-  for (i = 1; i < m->bindings.size; i += 2) {
-    if (table[i] != HT_NOTFOUND) {
-      jl_binding_t *b = (jl_binding_t *)table[i];
-      int hidden = jl_symbol_name(b->name)[0] == '#';
-      if ((b->exportp || (imported && b->imported) ||
-           ((b->owner == m) && (all || m == jl_main_module))) &&
-          (all || (!b->deprecated && !hidden))) {
-        jl_array_grow_end(a, 1);
-        // XXX: change to jl_arrayset if array storage allocation for
-        // Array{Symbols,1} changes:
-        jl_array_ptr_set(a, jl_array_dim0(a) - 1, (jl_value_t *)b->name);
-      }
-    }
-  }
-  JL_GC_POP();
-  return (jl_value_t *)a;
-}
-
-void ModuleGetter(v8::Local<v8::Name> name,
-                  const v8::PropertyCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  jl_value_t *module = static_cast<jl_value_t *>(
-      info.This()->GetAlignedPointerFromInternalField(0));
-
-  v8::String::Utf8Value s(name);
-  if (s.length() != 0) {
-    //    JL_GC_PUSH1(&module);
-
-    jl_value_t *value = jl_get_global((jl_module_t *)module, jl_symbol(*s));
-    if (value != nullptr) {
-      //    JL_GC_PUSH1(&value);
-
-      v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-      res.Set(j2::FromJuliaValue(isolate, value));
-
-      //      JL_GC_POP();
-    }
-
-    //    JL_GC_POP();
-  }
-}
-
-void ModuleEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  jl_value_t *module = static_cast<jl_value_t *>(
-      info.This()->GetAlignedPointerFromInternalField(0));
-
-  jl_array_t *names =
-      (jl_array_t *)jl_module_names((jl_module_t *)module, 0, 0);
-  size_t length = jl_array_len(names);
-
-  v8::Local<v8::Array> properties = v8::Array::New(isolate, length);
-  for (size_t i = 0; i < length; ++i) {
-    jl_value_t *v = jl_array_ptr_ref(names, i);
-    if (jl_symbol_name(reinterpret_cast<jl_sym_t *>(v)) !=
-        jl_symbol_name(reinterpret_cast<jl_module_t *>(module)->name)) {
-      properties->Set(
-          v8::Number::New(isolate, i),
-          v8::String::NewFromUtf8(
-              isolate, jl_symbol_name(reinterpret_cast<jl_sym_t *>(v))));
-    }
-  }
-
-  info.GetReturnValue().Set(properties);
-}
-
-} // unnamed namespace
 
 v8::Local<v8::Value> j2::FromJuliaJavaScriptValue(v8::Isolate *isolate,
                                                   jl_value_t *value) {

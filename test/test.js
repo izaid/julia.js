@@ -209,7 +209,7 @@ describe("JavaScript", function() {
     });
 
     it("String", function() {
-        //        assert.strictEqual("Hello, world!", Julia.eval("js\"\"Hello, world!\"\""));
+        assert.strictEqual("Hello, world!", Julia.eval("js\"'Hello, world!'\""));
     });
 
     it("Null", function() {
