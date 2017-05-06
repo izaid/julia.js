@@ -28,11 +28,8 @@ static void ImportGet(v8::Local<v8::Name> name,
                       const v8::PropertyCallbackInfo<v8::Value> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
-  v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
-
-  uintptr_t id =
-      reinterpret_cast<uintptr_t>(wrapper.As<v8::External>()->Value());
-  jl_value_t *object = j2::GetJuliaValue(id);
+  jl_value_t *object = static_cast<jl_value_t *>(
+      info.This()->GetAlignedPointerFromInternalField(1));
 
   v8::String::Utf8Value s(name);
   if (s.length() != 0) {
@@ -47,11 +44,8 @@ static void ImportGet(v8::Local<v8::Name> name,
 static void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
-  v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
-
-  uintptr_t id =
-      reinterpret_cast<uintptr_t>(wrapper.As<v8::External>()->Value());
-  jl_value_t *value = j2::GetJuliaValue(id);
+  jl_value_t *value = static_cast<jl_value_t *>(
+      info.This()->GetAlignedPointerFromInternalField(1));
 
   jl_datatype_t *type = (jl_datatype_t *)jl_typeof(value);
 
@@ -229,18 +223,6 @@ size_t j2::SizeOfJuliaValue(jl_value_t *value) {
   }
 
   return jl_unbox_int64(jl_call1(size, value));
-}
-
-jl_value_t *j2::GetJuliaValue(uintptr_t id) {
-  static jl_value_t *getindex = jl_get_function(jl_main_module, "getindex");
-  assert(getindex != nullptr);
-
-  static jl_value_t *shared = jl_get_function(js_module, "SHARED");
-  assert(shared != nullptr);
-
-  jl_value_t *value = jl_call2(getindex, shared, jl_box_uint64(id));
-
-  return value;
 }
 
 void j2::PushJuliaValue(v8::Isolate *isolate, uintptr_t id, jl_value_t *value) {
@@ -440,13 +422,9 @@ jl_value_t *j2::FromJavaScriptObject(v8::Isolate *isolate,
   return jl_nothing;
 }
 
-jl_value_t *UnboxJuliaValue(v8::Isolate *isolate,
-                            v8::Local<v8::Value> js_value) {
-  v8::Local<v8::Value> js_external =
-      js_value.As<v8::Object>()->GetInternalField(0);
-
-  return j2::GetJuliaValue(
-      reinterpret_cast<uintptr_t>(js_external.As<v8::External>()->Value()));
+jl_value_t *UnboxJuliaValue(v8::Isolate *isolate, v8::Local<v8::Value> value) {
+  return static_cast<jl_value_t *>(
+      value.As<v8::Object>()->GetAlignedPointerFromInternalField(1));
 }
 
 jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
@@ -686,7 +664,7 @@ v8::Local<v8::Value> j2::FromJuliaJavaScriptValue(v8::Isolate *isolate,
 v8::Local<v8::Value> j2::FromJuliaModule(v8::Isolate *isolate,
                                          jl_value_t *value) {
   v8::Local<v8::ObjectTemplate> instance = v8::ObjectTemplate::New(isolate);
-  instance->SetInternalFieldCount(1);
+  instance->SetInternalFieldCount(2);
 
   v8::NamedPropertyHandlerConfiguration handler;
   handler.getter = ModuleGetter;
@@ -696,6 +674,7 @@ v8::Local<v8::Value> j2::FromJuliaModule(v8::Isolate *isolate,
   v8::Local<v8::Object> module =
       instance->NewInstance(isolate->GetCurrentContext()).ToLocalChecked();
   module->SetInternalField(0, v8::External::New(isolate, value));
+  module->SetAlignedPointerInInternalField(1, value);
 
   return module;
 }

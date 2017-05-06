@@ -23,7 +23,6 @@ template <typename T> v8::Local<T> New(v8::Isolate *isolate, jl_value_t *value);
 template <typename T>
 v8::Local<T> NewPersistent(v8::Isolate *isolate, jl_value_t *value);
 
-jl_value_t *GetJuliaValue(uintptr_t id);
 void PushJuliaValue(v8::Isolate *isolate, uintptr_t id, jl_value_t *value);
 void PopJuliaValue(v8::Isolate *isolate, uintptr_t id);
 
