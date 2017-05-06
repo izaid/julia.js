@@ -10,20 +10,15 @@
 
 #include <j2.h>
 
+using namespace j2;
+
 static std::map<uintptr_t, v8::UniquePersistent<v8::Object>> PersistentValues;
 
 static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  static jl_value_t *getindex = jl_get_function(jl_main_module, "getindex");
-  assert(getindex != nullptr);
-
-  static jl_value_t *shared = jl_get_function(j2::js_module, "SHARED");
-  assert(shared != nullptr);
-
   v8::Isolate *isolate = info.GetIsolate();
 
-  uintptr_t id = reinterpret_cast<uintptr_t>(
-      info.This()->GetInternalField(0).As<v8::External>()->Value());
-  jl_value_t *value = jl_call2(getindex, shared, jl_box_uint64(id));
+  jl_value_t *value = static_cast<jl_value_t *>(
+      info.This()->GetAlignedPointerFromInternalField(1));
 
   v8::ReturnValue<v8::Value> res = info.GetReturnValue();
   res.Set(j2::FromJuliaValue(isolate, value, true));
@@ -99,6 +94,7 @@ static void JuliaConstruct(const v8::FunctionCallbackInfo<v8::Value> &info) {
 
   info.This()->SetInternalField(
       0, v8::External::New(isolate, reinterpret_cast<void *>(jl_object_id(u))));
+  info.This()->SetAlignedPointerInInternalField(1, u);
   j2::NewPersistent<v8::Value>(isolate, u);
 }
 
@@ -160,6 +156,7 @@ v8::Local<v8::Value> New<v8::Value>(v8::Isolate *isolate, jl_value_t *value) {
   res->SetInternalField(
       0, v8::External::New(isolate,
                            reinterpret_cast<void *>(jl_object_id(value))));
+  res->SetAlignedPointerInInternalField(1, value);
 
   return res;
 }
@@ -178,7 +175,7 @@ v8::Local<v8::FunctionTemplate> New<v8::FunctionTemplate>(v8::Isolate *isolate,
       v8::FunctionTemplate::New(isolate, ValueOfCallback));
 
   v8::Local<v8::ObjectTemplate> instance = constructor->InstanceTemplate();
-  instance->SetInternalFieldCount(1);
+  instance->SetInternalFieldCount(2);
   instance->SetCallAsFunctionHandler(JuliaCall2);
 
   v8::NamedPropertyHandlerConfiguration handler;
