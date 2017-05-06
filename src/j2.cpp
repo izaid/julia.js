@@ -18,7 +18,7 @@ static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
   jl_value_t *value = static_cast<jl_value_t *>(
-      info.This()->GetAlignedPointerFromInternalField(1));
+      info.This()->GetAlignedPointerFromInternalField(0));
 
   v8::ReturnValue<v8::Value> res = info.GetReturnValue();
   res.Set(j2::FromJuliaValue(isolate, value, true));
@@ -29,7 +29,7 @@ static void ImportGet(v8::Local<v8::Name> name,
   v8::Isolate *isolate = info.GetIsolate();
 
   jl_value_t *object = static_cast<jl_value_t *>(
-      info.This()->GetAlignedPointerFromInternalField(1));
+      info.This()->GetAlignedPointerFromInternalField(0));
 
   v8::String::Utf8Value s(name);
   if (s.length() != 0) {
@@ -45,7 +45,7 @@ static void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
   jl_value_t *value = static_cast<jl_value_t *>(
-      info.This()->GetAlignedPointerFromInternalField(1));
+      info.This()->GetAlignedPointerFromInternalField(0));
 
   jl_datatype_t *type = (jl_datatype_t *)jl_typeof(value);
 
@@ -80,15 +80,8 @@ static void JuliaConstruct(const v8::FunctionCallbackInfo<v8::Value> &info) {
   if (j2::TranslateJuliaException(isolate)) {
     return;
   }
-  //  printf("value = %i\n", jl_unbox_bool(u));
 
-  //  info.This() = j2::FromJuliaValue(isolate, u).As<v8::Object>();
-
-  //  info.This() = j2::NewPersistent<v8::Value>(isolate, u).As<v8::Object>();
-
-  info.This()->SetInternalField(
-      0, v8::External::New(isolate, reinterpret_cast<void *>(jl_object_id(u))));
-  info.This()->SetAlignedPointerInInternalField(1, u);
+  info.This()->SetAlignedPointerInInternalField(0, u);
   j2::NewPersistent<v8::Value>(isolate, u);
 }
 
@@ -115,7 +108,7 @@ static void JuliaCall2(const v8::FunctionCallbackInfo<v8::Value> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
   jl_value_t *object = static_cast<jl_value_t *>(
-      info.This()->GetAlignedPointerFromInternalField(1));
+      info.This()->GetAlignedPointerFromInternalField(0));
 
   jl_svec_t *args = jl_alloc_svec(info.Length());
   for (size_t i = 0; i < jl_svec_len(args); ++i) {
@@ -138,10 +131,7 @@ v8::Local<v8::Value> New<v8::Value>(v8::Isolate *isolate, jl_value_t *value) {
       NewPersistent<v8::FunctionTemplate>(isolate, jl_typeof(value));
 
   v8::Local<v8::Object> res = t->InstanceTemplate()->NewInstance();
-  res->SetInternalField(
-      0, v8::External::New(isolate,
-                           reinterpret_cast<void *>(jl_object_id(value))));
-  res->SetAlignedPointerInInternalField(1, value);
+  res->SetAlignedPointerInInternalField(0, value);
 
   return res;
 }
@@ -160,7 +150,7 @@ v8::Local<v8::FunctionTemplate> New<v8::FunctionTemplate>(v8::Isolate *isolate,
       v8::FunctionTemplate::New(isolate, ValueOfCallback));
 
   v8::Local<v8::ObjectTemplate> instance = constructor->InstanceTemplate();
-  instance->SetInternalFieldCount(2);
+  instance->SetInternalFieldCount(1);
   instance->SetCallAsFunctionHandler(JuliaCall2);
 
   v8::NamedPropertyHandlerConfiguration handler;
@@ -424,7 +414,7 @@ jl_value_t *j2::FromJavaScriptObject(v8::Isolate *isolate,
 
 jl_value_t *UnboxJuliaValue(v8::Isolate *isolate, v8::Local<v8::Value> value) {
   return static_cast<jl_value_t *>(
-      value.As<v8::Object>()->GetAlignedPointerFromInternalField(1));
+      value.As<v8::Object>()->GetAlignedPointerFromInternalField(0));
 }
 
 jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
@@ -606,9 +596,8 @@ void ModuleGetter(v8::Local<v8::Name> name,
                   const v8::PropertyCallbackInfo<v8::Value> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
-  v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
-  jl_value_t *module =
-      static_cast<jl_value_t *>(wrapper.As<v8::External>()->Value());
+  jl_value_t *module = static_cast<jl_value_t *>(
+      info.This()->GetAlignedPointerFromInternalField(0));
 
   v8::String::Utf8Value s(name);
   if (s.length() != 0) {
@@ -631,9 +620,8 @@ void ModuleGetter(v8::Local<v8::Name> name,
 void ModuleEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
-  v8::Local<v8::Value> wrapper = info.This()->GetInternalField(0);
-  jl_value_t *module =
-      static_cast<jl_value_t *>(wrapper.As<v8::External>()->Value());
+  jl_value_t *module = static_cast<jl_value_t *>(
+      info.This()->GetAlignedPointerFromInternalField(0));
 
   jl_array_t *names =
       (jl_array_t *)jl_module_names((jl_module_t *)module, 0, 0);
@@ -664,7 +652,7 @@ v8::Local<v8::Value> j2::FromJuliaJavaScriptValue(v8::Isolate *isolate,
 v8::Local<v8::Value> j2::FromJuliaModule(v8::Isolate *isolate,
                                          jl_value_t *value) {
   v8::Local<v8::ObjectTemplate> instance = v8::ObjectTemplate::New(isolate);
-  instance->SetInternalFieldCount(2);
+  instance->SetInternalFieldCount(1);
 
   v8::NamedPropertyHandlerConfiguration handler;
   handler.getter = ModuleGetter;
@@ -673,8 +661,7 @@ v8::Local<v8::Value> j2::FromJuliaModule(v8::Isolate *isolate,
 
   v8::Local<v8::Object> module =
       instance->NewInstance(isolate->GetCurrentContext()).ToLocalChecked();
-  module->SetInternalField(0, v8::External::New(isolate, value));
-  module->SetAlignedPointerInInternalField(1, value);
+  module->SetAlignedPointerInInternalField(0, value);
 
   return module;
 }
