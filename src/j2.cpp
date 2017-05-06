@@ -16,6 +16,80 @@ static std::map<uintptr_t, v8::UniquePersistent<v8::Object>> PersistentValues;
 
 namespace {
 
+void CallJuliaConstructor(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  v8::Local<v8::External> external = info.Data().As<v8::External>();
+  jl_value_t *value = static_cast<jl_value_t *>(external->Value());
+
+  jl_svec_t *args = jl_alloc_svec(info.Length());
+  for (size_t i = 0; i < jl_svec_len(args); ++i) {
+    jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
+
+    jl_svec_data(args)[i] = value;
+  }
+
+  jl_value_t *u = jl_call(value, jl_svec_data(args), jl_svec_len(args));
+  if (!TranslateJuliaException(isolate)) {
+    v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+    res.Set(FromJuliaValue(isolate, u));
+  }
+
+  /*
+    if (!TranslateJuliaException(isolate)) {
+      v8::Local<v8::Value> v = NewPersistent<v8::Value>(isolate, u);
+      info.This()->SetAlignedPointerInInternalField(
+          0, v.As<v8::Object>()->GetAlignedPointerFromInternalField(0));
+    }
+  */
+}
+
+/**
+ * Calls a Julia function.
+ */
+void CallJuliaFunction(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  jl_value_t *f =
+      static_cast<jl_value_t *>(info.Data().As<v8::External>()->Value());
+
+  jl_svec_t *args = jl_alloc_svec(info.Length());
+  for (size_t i = 0; i < jl_svec_len(args); ++i) {
+    jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
+
+    jl_svec_data(args)[i] = value;
+  }
+
+  jl_value_t *u = jl_call(f, jl_svec_data(args), jl_svec_len(args));
+  if (!TranslateJuliaException(isolate)) {
+    v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+    res.Set(FromJuliaValue(isolate, u));
+  }
+}
+
+/**
+ * Calls a Julia value.
+ */
+void CallJuliaValue(const v8::FunctionCallbackInfo<v8::Value> &info) {
+  v8::Isolate *isolate = info.GetIsolate();
+
+  jl_value_t *f = static_cast<jl_value_t *>(
+      info.This()->GetAlignedPointerFromInternalField(0));
+
+  jl_svec_t *args = jl_alloc_svec(info.Length());
+  for (size_t i = 0; i < jl_svec_len(args); ++i) {
+    jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
+
+    jl_svec_data(args)[i] = value;
+  }
+
+  jl_value_t *u = jl_call(f, jl_svec_data(args), jl_svec_len(args));
+  if (!TranslateJuliaException(isolate)) {
+    v8::ReturnValue<v8::Value> res = info.GetReturnValue();
+    res.Set(FromJuliaValue(isolate, u));
+  }
+}
+
 void ValueOf(const v8::FunctionCallbackInfo<v8::Value> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
@@ -67,66 +141,6 @@ static void ImportEnumerator(const v8::PropertyCallbackInfo<v8::Array> &info) {
   info.GetReturnValue().Set(properties);
 }
 
-static void JuliaConstruct(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  v8::Local<v8::External> external = info.Data().As<v8::External>();
-  jl_value_t *value = static_cast<jl_value_t *>(external->Value());
-
-  jl_svec_t *args = jl_alloc_svec(info.Length());
-  for (size_t i = 0; i < jl_svec_len(args); ++i) {
-    jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
-
-    jl_svec_data(args)[i] = value;
-  }
-
-  jl_value_t *u = jl_call(value, jl_svec_data(args), jl_svec_len(args));
-  if (j2::TranslateJuliaException(isolate)) {
-    return;
-  }
-
-  info.This()->SetAlignedPointerInInternalField(0, u);
-  j2::NewPersistent<v8::Value>(isolate, u);
-}
-
-static void JuliaCall(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  v8::Local<v8::External> external = info.Data().As<v8::External>();
-  jl_value_t *value = static_cast<jl_value_t *>(external->Value());
-
-  jl_svec_t *args = jl_alloc_svec(info.Length());
-  for (size_t i = 0; i < jl_svec_len(args); ++i) {
-    jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
-
-    jl_svec_data(args)[i] = value;
-  }
-
-  jl_value_t *u = jl_call(value, jl_svec_data(args), jl_svec_len(args));
-
-  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-  res.Set(j2::FromJuliaValue(isolate, u));
-}
-
-static void JuliaCall2(const v8::FunctionCallbackInfo<v8::Value> &info) {
-  v8::Isolate *isolate = info.GetIsolate();
-
-  jl_value_t *object = static_cast<jl_value_t *>(
-      info.This()->GetAlignedPointerFromInternalField(0));
-
-  jl_svec_t *args = jl_alloc_svec(info.Length());
-  for (size_t i = 0; i < jl_svec_len(args); ++i) {
-    jl_value_t *value = j2::FromJavaScriptValue(isolate, info[i]);
-
-    jl_svec_data(args)[i] = value;
-  }
-
-  jl_value_t *u = jl_call(object, jl_svec_data(args), jl_svec_len(args));
-
-  v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-  res.Set(j2::FromJuliaValue(isolate, u));
-}
-
 namespace j2 {
 
 template <>
@@ -146,7 +160,7 @@ v8::Local<v8::FunctionTemplate> New<v8::FunctionTemplate>(v8::Isolate *isolate,
   JL_GC_PUSH1(&value);
 
   v8::Local<v8::FunctionTemplate> constructor = v8::FunctionTemplate::New(
-      isolate, JuliaConstruct, v8::External::New(isolate, value));
+      isolate, CallJuliaConstructor, v8::External::New(isolate, value));
   constructor->SetClassName(v8::String::NewFromUtf8(isolate, "JuliaValue"));
 
   constructor->PrototypeTemplate()->Set(
@@ -155,7 +169,7 @@ v8::Local<v8::FunctionTemplate> New<v8::FunctionTemplate>(v8::Isolate *isolate,
 
   v8::Local<v8::ObjectTemplate> instance = constructor->InstanceTemplate();
   instance->SetInternalFieldCount(1);
-  instance->SetCallAsFunctionHandler(JuliaCall2);
+  instance->SetCallAsFunctionHandler(CallJuliaValue);
 
   v8::NamedPropertyHandlerConfiguration handler;
   handler.getter = ImportGet;
@@ -185,15 +199,12 @@ v8::Local<T> j2::NewPersistent(v8::Isolate *isolate, jl_value_t *value) {
 
   v8::Local<T> res = New<T>(isolate, value);
 
-  auto p = PersistentValues.emplace(std::piecewise_construct,
-                                    std::forward_as_tuple(id),
-                                    std::forward_as_tuple(isolate, res));
-  if (!p.second) {
-    printf("COLLISION!\n");
-  }
+  auto pair = PersistentValues.emplace(std::piecewise_construct,
+                                       std::forward_as_tuple(id),
+                                       std::forward_as_tuple(isolate, res));
 
-  auto jt = p.first;
-  jt->second.SetWeak(reinterpret_cast<void *>(id),
+  it = pair.first;
+  it->second.SetWeak(reinterpret_cast<void *>(id),
                      [](const v8::WeakCallbackInfo<void> &data) -> void {
                        uintptr_t id =
                            reinterpret_cast<uintptr_t>(data.GetParameter());
@@ -561,7 +572,7 @@ v8::Local<v8::Value> j2::FromJuliaArray(v8::Isolate *isolate,
 
 v8::Local<v8::Value> j2::FromJuliaFunction(v8::Isolate *isolate,
                                            jl_value_t *value) {
-  return v8::Function::New(isolate, JuliaCall,
+  return v8::Function::New(isolate, CallJuliaFunction,
                            v8::External::New(isolate, value));
 }
 
