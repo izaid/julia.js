@@ -14,15 +14,19 @@ using namespace j2;
 
 static std::map<uintptr_t, v8::UniquePersistent<v8::Object>> PersistentValues;
 
-static void ValueOfCallback(const v8::FunctionCallbackInfo<v8::Value> &info) {
+namespace {
+
+void ValueOf(const v8::FunctionCallbackInfo<v8::Value> &info) {
   v8::Isolate *isolate = info.GetIsolate();
 
   jl_value_t *value = static_cast<jl_value_t *>(
       info.This()->GetAlignedPointerFromInternalField(0));
 
   v8::ReturnValue<v8::Value> res = info.GetReturnValue();
-  res.Set(j2::FromJuliaValue(isolate, value, true));
+  res.Set(FromJuliaValue(isolate, value, true));
 }
+
+} // unnamed namespace
 
 static void ImportGet(v8::Local<v8::Name> name,
                       const v8::PropertyCallbackInfo<v8::Value> &info) {
@@ -147,7 +151,7 @@ v8::Local<v8::FunctionTemplate> New<v8::FunctionTemplate>(v8::Isolate *isolate,
 
   constructor->PrototypeTemplate()->Set(
       v8::String::NewFromUtf8(isolate, "valueOf"),
-      v8::FunctionTemplate::New(isolate, ValueOfCallback));
+      v8::FunctionTemplate::New(isolate, ValueOf));
 
   v8::Local<v8::ObjectTemplate> instance = constructor->InstanceTemplate();
   instance->SetInternalFieldCount(1);
