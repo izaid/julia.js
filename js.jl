@@ -9,9 +9,15 @@ module JavaScript
 
         function Value()
             res = new()
-            finalizer(res, (x::Value) -> ccall((:j2_destroy_value, @__NODE_FILE__), Void, (Any,), x))
+            finalizer(res, finalize_value)
             res
         end
+    end
+
+    # bitstype 8 ValueBits
+
+    function finalize_value(x::Value)
+        ccall((:j2_destroy_value, @__NODE_FILE__), Void, (Any,), x)
     end
 
     const SHARED = Dict()

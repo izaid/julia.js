@@ -223,6 +223,7 @@ describe("JavaScript", function() {
         }, Julia.eval("js\"var z = {x: 1, y: 2}; z\"").valueOf());
     });
 
+
     it("Array", function() {
         assert.deepEqual({
             dims: [5],
@@ -232,6 +233,7 @@ describe("JavaScript", function() {
             data: new Float32Array([0, 1, 2, 3, 4])
         }).valueOf());
 
+/*
         assert.deepEqual({
             dims: [
                 2, 2
@@ -243,5 +245,6 @@ describe("JavaScript", function() {
             ],
             data: new Uint8Array([0, 1, 2, 3])
         }).valueOf());
+*/
     });
 });
