@@ -220,7 +220,7 @@ describe("JavaScript", function() {
         assert.deepEqual({
             x: 1,
             y: 2
-        }, Julia.eval("js\"var z = {x: 1, y: 2}; z\""));
+        }, Julia.eval("js\"var z = {x: 1, y: 2}; z\"").valueOf());
     });
 
     it("Array", function() {

@@ -7,9 +7,9 @@ module JavaScript
     type Value
         ptr::Ptr{Void}
 
-        function Value(ptr)
-            res = new(ptr)
-            finalizer(res, (x::Value) -> ccall((:j2_delete_persistent_value, @__NODE_FILE__), Void, (Ptr{Void},), x.ptr))
+        function Value()
+            res = new()
+            finalizer(res, (x::Value) -> ccall((:j2_destroy_value, @__NODE_FILE__), Void, (Any,), x))
             res
         end
     end

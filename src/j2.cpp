@@ -12,6 +12,10 @@
 
 using namespace j2;
 
+static_assert(sizeof(v8::Persistent<v8::Value>) <= sizeof(void *),
+              "v8::Persistent<v8::Value> must have a size not greater than the "
+              "size of a void *");
+
 static std::map<uintptr_t, v8::UniquePersistent<v8::Object>> PersistentValues;
 
 namespace {
@@ -508,9 +512,6 @@ jl_value_t *UnboxJuliaValue(v8::Isolate *isolate, v8::Local<v8::Value> value) {
 
 jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
                                     v8::Local<v8::Value> value) {
-  static jl_value_t *js_value_type = jl_get_function(js_module, "Value");
-  assert(js_value_type != nullptr);
-
   if (value->IsBoolean()) {
     return FromJavaScriptBoolean(value);
   }
@@ -549,15 +550,47 @@ jl_value_t *j2::FromJavaScriptValue(v8::Isolate *isolate,
   //    return FromJavaScriptObject(isolate, value);
   //}
 
-  jl_value_t *v = jl_call1(
-      js_value_type,
-      jl_box_voidpointer(new v8::Persistent<v8::Value>(isolate, value)));
+  return PushValue(isolate, value);
+}
+
+jl_value_t *j2::PushValue(v8::Isolate *isolate, v8::Local<v8::Value> value) {
+  static jl_value_t *js_value_type2 = jl_get_function(js_module, "Value");
+  assert(js_value_type2 != nullptr);
+
+  static std::map<uintptr_t, jl_value_t *> PersistentValues;
+
+  int id = value.As<v8::Object>()->GetIdentityHash();
+
+  auto it = PersistentValues.find(id);
+  if (it != PersistentValues.end()) {
+    return it->second;
+  }
+
+  //  jl_value_t *v = jl_call1(
+  //    js_value_type,
+  //  jl_box_voidpointer(new v8::Persistent<v8::Value>(isolate, value)));
+
+  jl_value_t *u =
+      jl_new_struct_uninit(reinterpret_cast<jl_datatype_t *>(js_value_type2));
+  new (jl_data_ptr(u)) v8::Persistent<v8::Value>(isolate, value);
+  return u;
+  //  new (jl_data_ptr(v)) v8::Persistent<v8::Value>(isolate, value);
+  //  *reinterpret_cast<void **>(u) = new v8::Persistent<v8::Value>(isolate,
+  //  value); memcpy(jl_valueof(v), new v8::Persistent<v8::Value>(isolate,
+  //  value), *v = new v8::Persistent<v8::Value>(isolate, value);
+  //  reinterpret_cast<v8::Persistent<v8::Value> *>(jl_valueof(v)) =
+  //      new v8::Persistent<v8::Value>(isolate, value);
+
+  //  jl_value_t *u = jl_new_struct_uninit(reinterpret_cast<jl_datatype_t
+  //  *>(js_value_type2));
+
+  PersistentValues.emplace(id, u);
 
   if (TranslateJuliaException(isolate)) {
     return jl_nothing;
   }
 
-  return v;
+  return u;
 }
 
 v8::Local<v8::Value> j2::FromJuliaBool(v8::Isolate *isolate,
@@ -656,8 +689,7 @@ v8::Local<v8::Value> j2::FromJuliaType(v8::Isolate *isolate,
 
 v8::Local<v8::Value> j2::FromJuliaJavaScriptValue(v8::Isolate *isolate,
                                                   jl_value_t *value) {
-  jl_value_t *ptr = jl_get_nth_field(value, 0);
-  return static_cast<v8::Persistent<v8::Value> *>(jl_unbox_voidpointer(ptr))
+  return reinterpret_cast<v8::Persistent<v8::Value> *>(jl_data_ptr(value))
       ->Get(isolate);
 }
 
@@ -816,6 +848,7 @@ jl_value_t *j2_to_julia_array(jl_value_t *jl_value) {
   return (jl_value_t *)res;
 }
 
-void j2_delete_persistent_value(void *ptr) {
-  delete reinterpret_cast<v8::Persistent<v8::Value> *>(ptr);
+void j2_destoy_value(jl_value_t *value) {
+  reinterpret_cast<v8::Persistent<v8::Value> *>(jl_data_ptr(value))
+      ->v8::Persistent<v8::Value>::~Persistent();
 }

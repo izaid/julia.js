@@ -54,7 +54,9 @@ jl_value_t *FromJavaScriptObject(v8::Isolate *isolate,
 jl_value_t *FromJavaScriptValue(v8::Isolate *isolate,
                                 v8::Local<v8::Value> value);
 
+jl_value_t *PushValue(v8::Isolate *isolate, v8::Local<v8::Value> value);
+
 } // namespace j2
 
-extern "C" void j2_delete_persistent_value(void *ptr);
+extern "C" void j2_destroy_value(jl_value_t *value);
 extern "C" jl_value_t *j2_to_julia_array(jl_value_t *value);
